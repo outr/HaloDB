@@ -83,6 +83,6 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-core" % "2.3" % Test,
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.3" % Test,
   "org.testng" % "testng" % "6.9.10" % Test,
-  "org.jmockit" % "jmockit" % "1.49" % Test,
+  "org.jmockit" % "jmockit" % "1.50" % Test,
   "org.assertj" % "assertj-core" % "3.8.0" % Test
 )
