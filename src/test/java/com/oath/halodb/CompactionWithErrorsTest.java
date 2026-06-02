@@ -10,8 +10,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import sun.nio.ch.FileChannelImpl;
-
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Paths;
