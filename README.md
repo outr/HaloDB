@@ -1,20 +1,13 @@
 # HaloDB
 
-[![Build Status](https://travis-ci.org/yahoo/HaloDB.svg?branch=master)](https://travis-ci.org/yahoo/HaloDB)
-[![Download](https://api.bintray.com/packages/yahoo/maven/halodb/images/download.svg) ](https://bintray.com/yahoo/maven/halodb/_latestVersion)
+[![Apache License, Version 2.0, January 2004](https://img.shields.io/github/license/apache/maven.svg?label=License)](license)
+[![Build Status](https://travis-ci.org/outr/HaloDB.svg?branch=master)](https://travis-ci.org/outr/HaloDB)
+[![Maven Central](https://img.shields.io/maven-central/v/com.outr/halodb-revive/badge.svg?&versionPrefix=0.)](https://mvnrepository.com/artifact/com.outr/halodb-revive)
 
 HaloDB Revived! This is a fork of the unmaintained https://github.com/yahoo/HaloDB published to Maven Central. I will
 welcome any PRs to improve this project.
 
-Current Release:
-
-```xml
-<dependency>
-  <groupId>com.outr</groupId>
-  <artifactId>halodb-revive</artifactId>
-  <version>0.5.7</version> 
-</dependency>
-```
+# HaloDB Revive
 
 HaloDB is a fast and simple embedded key-value store written in Java. HaloDB is suitable for IO bound workloads, and is capable of handling high throughput reads and writes at submillisecond latencies. 
 
@@ -159,19 +152,13 @@ is allocated in native memory, outside the Java heap.
             // Close the database.
             db.close();
 ```
-Binaries for HaloDB are hosted on [Bintray](https://bintray.com/yahoo).   
+Binaries for HaloDB Revive are hosted on [Maven Central](https://mvnrepository.com/artifact/com.outr/halodb-revive).   
 ``` xml
 <dependency>
-  <groupId>com.oath.halodb</groupId>
-  <artifactId>halodb</artifactId>
-  <version>x.y.x</version> 
+  <groupId>com.outr</groupId>
+  <artifactId>halodb-revive</artifactId>
+  <version>0.5.7</version> 
 </dependency>
-
-<repository>
-  <id>yahoo-bintray</id>
-  <name>yahoo-bintray</name>
-  <url>https://yahoo.bintray.com/maven</url>
-</repository>
 ``` 
    
 
