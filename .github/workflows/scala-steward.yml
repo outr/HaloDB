@@ -14,9 +14,7 @@ jobs:
       - name: Run Scala Steward
         uses: scala-steward-org/scala-steward-action@v2
         with:
-          # GITHUB_TOKEN works out of the box, but PRs it opens will NOT trigger
-          # the CI workflow (a GitHub Actions limitation). To have Steward's PRs
-          # run CI, create a Personal Access Token (repo scope) and store it as a
-          # repository secret named SCALA_STEWARD_TOKEN — this expression then
-          # prefers it and falls back to GITHUB_TOKEN when it is absent.
-          github-token: ${{ secrets.SCALA_STEWARD_TOKEN || secrets.GITHUB_TOKEN }}
+          # Uses the org-level ADMIN_GITHUB_TOKEN (a PAT) so Steward's PRs trigger
+          # the CI workflow; PRs opened with the default GITHUB_TOKEN would not.
+          # Falls back to GITHUB_TOKEN if the org secret isn't available to this repo.
+          github-token: ${{ secrets.ADMIN_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
