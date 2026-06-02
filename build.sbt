@@ -77,7 +77,7 @@ ThisBuild / outputStrategy := Some(StdoutOutput)
 
 libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % "1.7.12",
-  "com.google.guava" % "guava" % "18.0",
+  "com.google.guava" % "guava" % "33.6.0-jre",
   "net.jpountz.lz4" % "lz4" % "1.3",
   "org.hamcrest" % "hamcrest-all" % "1.3" % Test,
   "org.apache.logging.log4j" % "log4j-core" % "2.3" % Test,
