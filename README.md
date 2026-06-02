@@ -217,7 +217,10 @@ See the option setting section in example code above. As best practice, set tomb
 index threads to number of available processors divided by number of dbs being opened simultaneously.
 
 ### System requirements. 
-* HaloDB requires Java 8 to run, but has not yet been tested with newer Java versions.  
+* HaloDB requires **Java 22 or newer**. It uses the Foreign Function & Memory API (`java.lang.foreign`)
+  for off-heap memory, which was finalized in JDK 22. (Earlier releases required Java 8 and relied on the
+  now-removed `sun.misc.Unsafe`.) Run the JVM with `--enable-native-access=ALL-UNNAMED` (or the module
+  embedding HaloDB) to suppress the restricted-method warning emitted by the native memory layer.
 * HaloDB has been tested on Linux running on x86 and on MacOS. It may run on other platforms, but this hasn't been verified yet.
 * For performance disable Transparent Huge Pages and swapping (vm.swappiness=0).
 * If a thread is interrupted JVM will close those file channels the thread was operating on.

@@ -9,11 +9,8 @@ package com.oath.halodb;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
@@ -28,118 +25,107 @@ public class UnsTest
         Uns.clearUnsDebugForTest();
     }
 
-    private static final Unsafe unsafe;
-
     static final int CAPACITY = 65536;
-    static final ByteBuffer directBuffer;
 
-    static
-    {
-        try
-        {
-            Field field = Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            unsafe = (Unsafe) field.get(null);
-            if (unsafe.addressSize() > 8)
-                throw new RuntimeException("Address size " + unsafe.addressSize() + " not supported yet (max 8 bytes)");
-
-            directBuffer = ByteBuffer.allocateDirect(CAPACITY);
-        }
-        catch (Exception e)
-        {
-            throw new AssertionError(e);
-        }
-    }
-
-    private static void fillRandom()
+    private static byte[] randomBytes(int len)
     {
         Random r = new Random();
-        directBuffer.clear();
-        while (directBuffer.remaining() >= 4)
-            directBuffer.putInt(r.nextInt());
-        directBuffer.clear();
+        byte[] b = new byte[len];
+        r.nextBytes(b);
+        return b;
     }
 
     @Test
     public void testDirectBufferFor() throws Exception
     {
-        fillRandom();
+        // Oracle is a plain JDK heap buffer over the same bytes; directBufferFor uses BIG_ENDIAN order.
+        byte[] bytes = randomBytes(CAPACITY);
+        ByteBuffer reference = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
 
-        ByteBuffer buf = Uns.directBufferFor(((DirectBuffer) directBuffer).address(), 0, directBuffer.capacity(), false);
-
-        for (int i = 0; i < CAPACITY; i++)
+        long adr = Uns.allocate(CAPACITY);
+        try
         {
-            byte b = buf.get();
-            byte d = directBuffer.get();
-            assertEquals(b, d);
+            Uns.copyMemory(bytes, 0, adr, 0, CAPACITY);
+            ByteBuffer buf = Uns.directBufferFor(adr, 0, CAPACITY, false);
 
-            assertEquals(buf.position(), directBuffer.position());
-            assertEquals(buf.limit(), directBuffer.limit());
-            assertEquals(buf.remaining(), directBuffer.remaining());
-            assertEquals(buf.capacity(), directBuffer.capacity());
+            for (int i = 0; i < CAPACITY; i++)
+            {
+                byte b = buf.get();
+                byte d = reference.get();
+                assertEquals(b, d);
+
+                assertEquals(buf.position(), reference.position());
+                assertEquals(buf.limit(), reference.limit());
+                assertEquals(buf.remaining(), reference.remaining());
+                assertEquals(buf.capacity(), reference.capacity());
+            }
+
+            buf.clear();
+            reference.clear();
+
+            while (buf.remaining() >= 8)
+            {
+                long b = buf.getLong();
+                long d = reference.getLong();
+                assertEquals(b, d);
+
+                assertEquals(buf.position(), reference.position());
+                assertEquals(buf.remaining(), reference.remaining());
+            }
+
+            while (buf.remaining() >= 4)
+            {
+                int b = buf.getInt();
+                int d = reference.getInt();
+                assertEquals(b, d);
+
+                assertEquals(buf.position(), reference.position());
+                assertEquals(buf.remaining(), reference.remaining());
+            }
+
+            for (int i = 0; i < CAPACITY; i++)
+            {
+                byte b = buf.get(i);
+                byte d = reference.get(i);
+                assertEquals(b, d);
+
+                if (i >= CAPACITY - 1)
+                    continue;
+
+                char bufChar = buf.getChar(i);
+                char dirChar = reference.getChar(i);
+                short bufShort = buf.getShort(i);
+                short dirShort = reference.getShort(i);
+
+                assertEquals(bufChar, dirChar);
+                assertEquals(bufShort, dirShort);
+
+                if (i >= CAPACITY - 3)
+                    continue;
+
+                int bufInt = buf.getInt(i);
+                int dirInt = reference.getInt(i);
+                float bufFloat = buf.getFloat(i);
+                float dirFloat = reference.getFloat(i);
+
+                assertEquals(bufInt, dirInt);
+                assertEquals(bufFloat, dirFloat);
+
+                if (i >= CAPACITY - 7)
+                    continue;
+
+                long bufLong = buf.getLong(i);
+                long dirLong = reference.getLong(i);
+                double bufDouble = buf.getDouble(i);
+                double dirDouble = reference.getDouble(i);
+
+                assertEquals(bufLong, dirLong);
+                assertEquals(bufDouble, dirDouble);
+            }
         }
-
-        buf.clear();
-        directBuffer.clear();
-
-        while (buf.remaining() >= 8)
+        finally
         {
-            long b = buf.getLong();
-            long d = directBuffer.getLong();
-            assertEquals(b, d);
-
-            assertEquals(buf.position(), directBuffer.position());
-            assertEquals(buf.remaining(), directBuffer.remaining());
-        }
-
-        while (buf.remaining() >= 4)
-        {
-            int b = buf.getInt();
-            int d = directBuffer.getInt();
-            assertEquals(b, d);
-
-            assertEquals(buf.position(), directBuffer.position());
-            assertEquals(buf.remaining(), directBuffer.remaining());
-        }
-
-        for (int i = 0; i < CAPACITY; i++)
-        {
-            byte b = buf.get(i);
-            byte d = directBuffer.get(i);
-            assertEquals(b, d);
-
-            if (i >= CAPACITY - 1)
-                continue;
-
-            char bufChar = buf.getChar(i);
-            char dirChar = directBuffer.getChar(i);
-            short bufShort = buf.getShort(i);
-            short dirShort = directBuffer.getShort(i);
-
-            assertEquals(bufChar, dirChar);
-            assertEquals(bufShort, dirShort);
-
-            if (i >= CAPACITY - 3)
-                continue;
-
-            int bufInt = buf.getInt(i);
-            int dirInt = directBuffer.getInt(i);
-            float bufFloat = buf.getFloat(i);
-            float dirFloat = directBuffer.getFloat(i);
-
-            assertEquals(bufInt, dirInt);
-            assertEquals(bufFloat, dirFloat);
-
-            if (i >= CAPACITY - 7)
-                continue;
-
-            long bufLong = buf.getLong(i);
-            long dirLong = directBuffer.getLong(i);
-            double bufDouble = buf.getDouble(i);
-            double dirDouble = directBuffer.getDouble(i);
-
-            assertEquals(bufLong, dirLong);
-            assertEquals(bufDouble, dirDouble);
+            Uns.free(adr);
         }
     }
 
@@ -166,20 +152,6 @@ public class UnsTest
         long before = Uns.getTotalAllocated();
         if (before < 0L)
             return;
-
-        // TODO Uns.getTotalAllocated() seems not to respect "small" areas - need to check that ... eventually.
-//        long[] adrs = new long[10000];
-//        try
-//        {
-//            for (int i=0;i<adrs.length;i++)
-//                adrs[i] = Uns.allocate(100);
-//            assertTrue(Uns.getTotalAllocated() > before);
-//        }
-//        finally
-//        {
-//            for (long adr : adrs)
-//                Uns.free(adr);
-//        }
 
         long adr = Uns.allocate(128 * 1024 * 1024);
         try
@@ -222,7 +194,7 @@ public class UnsTest
     private static void equals(byte[] ref, long adr, int off, int len)
     {
         for (; len-- > 0; off++)
-            assertEquals(unsafe.getByte(adr + off), ref[off]);
+            assertEquals(Uns.getByte(adr, off), ref[off]);
     }
 
     private static void equals(byte[] ref, byte[] arr, int off, int len)
@@ -243,7 +215,7 @@ public class UnsTest
                     Uns.setMemory(adr, offset, 7777, b);
 
                     for (int off = 0; off < 7777; off++)
-                        assertEquals(unsafe.getByte(adr + offset), b);
+                        assertEquals(Uns.getByte(adr, offset), b);
                 }
         }
         finally
@@ -256,41 +228,33 @@ public class UnsTest
     public void testGetLongFromByteArray() throws Exception
     {
         byte[] arr = HashTableTestUtils.randomBytes(32);
-        ByteOrder order = directBuffer.order();
-        directBuffer.order(ByteOrder.nativeOrder());
-        try
+        // getLongFromByteArray mirrors native byte order, so the oracle reads in native order too.
+        ByteBuffer reference = ByteBuffer.wrap(arr).order(ByteOrder.nativeOrder());
+        for (int i = 0; i < 14; i++)
         {
-            for (int i = 0; i < 14; i++)
-            {
-                long u = Uns.getLongFromByteArray(arr, i);
-                directBuffer.clear();
-                directBuffer.put(arr);
-                directBuffer.flip();
-                long b = directBuffer.getLong(i);
-                assertEquals(b, u);
-            }
-        }
-        finally
-        {
-            directBuffer.order(order);
+            long u = Uns.getLongFromByteArray(arr, i);
+            long b = reference.getLong(i);
+            assertEquals(b, u);
         }
     }
 
     @Test
     public void testGetPutLong() throws Exception
     {
+        byte[] src = HashTableTestUtils.randomBytes(128);
+        ByteBuffer oracle = ByteBuffer.wrap(src).order(ByteOrder.nativeOrder());
         long adr = Uns.allocate(128);
         try
         {
-            Uns.copyMemory(HashTableTestUtils.randomBytes(128), 0, adr, 0, 128);
+            Uns.copyMemory(src, 0, adr, 0, 128);
 
             for (int i = 0; i < 14; i++)
             {
                 long l = Uns.getLong(adr, i);
-                assertEquals(unsafe.getLong(adr + i), Uns.getLong(adr, i));
+                assertEquals(oracle.getLong(i), l);
 
                 Uns.putLong(adr, i, l);
-                assertEquals(unsafe.getLong(adr + i), l);
+                assertEquals(Uns.getLong(adr, i), l);
             }
         }
         finally
@@ -302,18 +266,20 @@ public class UnsTest
     @Test
     public void testGetPutInt() throws Exception
     {
+        byte[] src = HashTableTestUtils.randomBytes(128);
+        ByteBuffer oracle = ByteBuffer.wrap(src).order(ByteOrder.nativeOrder());
         long adr = Uns.allocate(128);
         try
         {
-            Uns.copyMemory(HashTableTestUtils.randomBytes(128), 0, adr, 0, 128);
+            Uns.copyMemory(src, 0, adr, 0, 128);
 
             for (int i = 0; i < 14; i++)
             {
                 int l = Uns.getInt(adr, i);
-                assertEquals(unsafe.getInt(adr + i), Uns.getInt(adr, i));
+                assertEquals(oracle.getInt(i), l);
 
                 Uns.putInt(adr, i, l);
-                assertEquals(unsafe.getInt(adr + i), l);
+                assertEquals(Uns.getInt(adr, i), l);
             }
         }
         finally
@@ -325,18 +291,20 @@ public class UnsTest
     @Test
     public void testGetPutShort() throws Exception
     {
+        byte[] src = HashTableTestUtils.randomBytes(128);
+        ByteBuffer oracle = ByteBuffer.wrap(src).order(ByteOrder.nativeOrder());
         long adr = Uns.allocate(128);
         try
         {
-            Uns.copyMemory(HashTableTestUtils.randomBytes(128), 0, adr, 0, 128);
+            Uns.copyMemory(src, 0, adr, 0, 128);
 
             for (int i = 0; i < 14; i++)
             {
                 short l = Uns.getShort(adr, i);
-                assertEquals(unsafe.getShort(adr + i), Uns.getShort(adr, i));
+                assertEquals(oracle.getShort(i), l);
 
                 Uns.putShort(adr, i, l);
-                assertEquals(unsafe.getShort(adr + i), l);
+                assertEquals(Uns.getShort(adr, i), l);
             }
         }
         finally
@@ -358,11 +326,9 @@ public class UnsTest
                 ByteBuffer buf = Uns.directBufferFor(adr, i, 8, false);
                 byte l = Uns.getByte(adr, i);
                 assertEquals(buf.get(0), Uns.getByte(adr, i));
-                assertEquals(unsafe.getByte(adr + i), Uns.getByte(adr, i));
 
                 Uns.putByte(adr, i, l);
                 assertEquals(buf.get(0), l);
-                assertEquals(unsafe.getByte(adr + i), l);
             }
         }
         finally
@@ -377,7 +343,8 @@ public class UnsTest
         long adr = Uns.allocate(128);
         try
         {
-            for (int i = 0; i < 120; i++)
+            // Atomic counters require 4-byte aligned offsets under the FFM API.
+            for (int i = 0; i + 4 <= 128; i += 4)
             {
                 String loop = "at loop #" + i;
                 long v = Uns.getInt(adr, i);
