@@ -5,28 +5,33 @@
 package com.oath.halodb.benchmarks;
 
 import org.rocksdb.CompressionType;
-import org.rocksdb.Env;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.Statistics;
 import org.rocksdb.WriteOptions;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 public class RocksDBStorageEngine implements StorageEngine {
 
+    static {
+        RocksDB.loadLibrary();
+    }
+
     private RocksDB db;
     private Options options;
-    private Statistics statistics;
     private WriteOptions writeOptions;
 
     private final File dbDirectory;
+    private final boolean compress;
 
     public RocksDBStorageEngine(File dbDirectory, int noOfRecords) {
+        this(dbDirectory, false);
+    }
+
+    public RocksDBStorageEngine(File dbDirectory, boolean compress) {
         this.dbDirectory = dbDirectory;
+        this.compress = compress;
     }
 
     @Override
@@ -34,95 +39,68 @@ public class RocksDBStorageEngine implements StorageEngine {
         try {
             db.put(writeOptions, key, value);
         } catch (RocksDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
     }
 
     @Override
     public byte[] get(byte[] key) {
-        byte[] value = null;
         try {
-            value = db.get(key);
+            return db.get(key);
         } catch (RocksDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
+    }
 
-        return value;
+    @Override
+    public void delete(byte[] key) {
+        try {
+            db.delete(writeOptions, key);
+        } catch (RocksDBException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void open() {
-        options = new Options().setCreateIfMissing(true);
-        options.setStatsDumpPeriodSec(1000000);
+        options = new Options()
+            .setCreateIfMissing(true)
+            .setWriteBufferSize(128L * 1024 * 1024)
+            .setMaxWriteBufferNumber(3)
+            .setMaxBackgroundJobs(Math.max(4, Runtime.getRuntime().availableProcessors()))
+            .setMaxBytesForLevelBase(512L * 1024 * 1024)
+            .setTargetFileSizeBase(64L * 1024 * 1024)
+            .setLevel0FileNumCompactionTrigger(4)
+            .setLevel0SlowdownWritesTrigger(20)
+            .setLevel0StopWritesTrigger(36)
+            .setNumLevels(7)
+            // Default off for a like-for-like comparison with HaloDB (which stores values raw);
+            // pass --rocks-compress to enable LZ4.
+            .setCompressionType(compress ? CompressionType.LZ4_COMPRESSION : CompressionType.NO_COMPRESSION);
 
-        options.setWriteBufferSize(128l * 1024 * 1024);
-        options.setMaxWriteBufferNumber(3);
-        options.setMaxBackgroundCompactions(20);
-
-        Env env = Env.getDefault();
-        env.setBackgroundThreads(20, Env.COMPACTION_POOL);
-        options.setEnv(env);
-
-        // max size of L1 10 MB.
-        options.setMaxBytesForLevelBase(10485760);
-        options.setTargetFileSizeBase(67108864);
-
-        options.setLevel0FileNumCompactionTrigger(4);
-        options.setLevel0SlowdownWritesTrigger(6);
-        options.setLevel0StopWritesTrigger(12);
-        options.setNumLevels(6);
-        options.setDeleteObsoleteFilesPeriodMicros(300000000);
-
-
-        options.setAllowMmapReads(false);
-        options.setCompressionType(CompressionType.SNAPPY_COMPRESSION);
-
-
-        System.out.printf("maxBackgroundCompactions %d \n", options.maxBackgroundCompactions());
-        System.out.printf("minWriteBufferNumberToMerge %d \n", options.minWriteBufferNumberToMerge());
-        System.out.printf("maxWriteBufferNumberToMaintain %d \n", options.maxWriteBufferNumberToMaintain());
-
-
-        System.out.printf("level0FileNumCompactionTrigger %d \n", options.level0FileNumCompactionTrigger());
-        System.out.printf("maxBytesForLevelBase %d \n", options.maxBytesForLevelBase());
-        System.out.printf("maxBytesForLevelMultiplier %f \n", options.maxBytesForLevelMultiplier());
-        System.out.printf("targetFileSizeBase %d \n", options.targetFileSizeBase());
-        System.out.printf("targetFileSizeMultiplier %d \n", options.targetFileSizeMultiplier());
-
-        List<CompressionType> compressionLevels =
-            Arrays.asList(
-                CompressionType.NO_COMPRESSION,
-                CompressionType.NO_COMPRESSION,
-                CompressionType.SNAPPY_COMPRESSION,
-                CompressionType.SNAPPY_COMPRESSION,
-                CompressionType.SNAPPY_COMPRESSION,
-                CompressionType.SNAPPY_COMPRESSION
-            );
-
-        options.setCompressionPerLevel(compressionLevels);
-
-        System.out.printf("compressionPerLevel %s \n", options.compressionPerLevel());
-        System.out.printf("numLevels %s \n", options.numLevels());
-
-        writeOptions = new WriteOptions();
-        writeOptions.setDisableWAL(true);
-
-        System.out.printf("WAL is disabled - %s \n", writeOptions.disableWAL());
+        // Match HaloDB's "flush to page cache, not fsync per write" durability profile.
+        writeOptions = new WriteOptions().setDisableWAL(true);
 
         try {
             db = RocksDB.open(options, dbDirectory.getPath());
         } catch (RocksDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-
     }
 
     @Override
     public void close() {
-        //statistics.close();
-        options.close();
-        writeOptions.close();
-        db.close();
+        if (db != null) db.close();
+        if (writeOptions != null) writeOptions.close();
+        if (options != null) options.close();
+    }
+
+    @Override
+    public long size() {
+        try {
+            return db.getLongProperty("rocksdb.estimate-num-keys");
+        } catch (RocksDBException e) {
+            return -1;
+        }
     }
 }
