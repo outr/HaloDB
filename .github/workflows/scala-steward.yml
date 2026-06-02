@@ -1,0 +1,22 @@
+name: Scala Steward
+
+# Scala Steward opens PRs to update sbt itself, sbt plugins, and library
+# dependencies declared in build.sbt / project/*.sbt.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # every Monday at 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  scala-steward:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Scala Steward
+        uses: scala-steward-org/scala-steward-action@v2
+        with:
+          # GITHUB_TOKEN works out of the box, but PRs it opens will NOT trigger
+          # the CI workflow (a GitHub Actions limitation). To have Steward's PRs
+          # run CI, create a Personal Access Token (repo scope) and store it as a
+          # repository secret named SCALA_STEWARD_TOKEN — this expression then
+          # prefers it and falls back to GITHUB_TOKEN when it is absent.
+          github-token: ${{ secrets.SCALA_STEWARD_TOKEN || secrets.GITHUB_TOKEN }}

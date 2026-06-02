@@ -1,7 +1,7 @@
 # HaloDB
 
 [![Apache License, Version 2.0, January 2004](https://img.shields.io/github/license/apache/maven.svg?label=License)](license)
-[![Build Status](https://travis-ci.org/outr/HaloDB.svg?branch=master)](https://travis-ci.org/outr/HaloDB)
+[![CI](https://github.com/outr/HaloDB/actions/workflows/ci.yml/badge.svg)](https://github.com/outr/HaloDB/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.outr/halodb-revive/badge.svg?&versionPrefix=0.)](https://mvnrepository.com/artifact/com.outr/halodb-revive)
 
 HaloDB Revived! This is a fork of the unmaintained https://github.com/yahoo/HaloDB published to Maven Central. I will
