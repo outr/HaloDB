@@ -3,3 +3,4 @@ target
 halodb.iml
 tmp/
 .bsp/
+bench/out/
