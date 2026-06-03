@@ -8,8 +8,10 @@ import com.google.common.primitives.Ints;
 import com.oath.halodb.HaloDB;
 import com.oath.halodb.HaloDBException;
 import com.oath.halodb.HaloDBOptions;
+import com.oath.halodb.Record;
 
 import java.io.File;
+import java.util.Iterator;
 
 public class HaloDBStorageEngine implements StorageEngine {
 
@@ -45,6 +47,22 @@ public class HaloDBStorageEngine implements StorageEngine {
     }
 
     @Override
+    public long prefixScan(byte[] prefix) {
+        try {
+            Iterator<Record> it = db.prefixScan(prefix);
+            long count = 0, bytes = 0;
+            while (it.hasNext()) {
+                Record r = it.next();
+                bytes += r.getValue().length; // touch the value
+                count++;
+            }
+            return count;
+        } catch (HaloDBException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void delete(byte[] key) {
         try {
             db.delete(key);
@@ -63,6 +81,7 @@ public class HaloDBStorageEngine implements StorageEngine {
         opts.setCompactionJobRate(135 * 1024 * 1024);
         opts.setUseMemoryPool(true);
         opts.setFixedKeySize(8);
+        opts.setUseOrderedIndex(true); // enable prefix/range scans
 
         try {
             db = HaloDB.open(dbDirectory, opts);

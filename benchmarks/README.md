@@ -6,10 +6,11 @@ It depends on the HaloDB source directly, so it always builds against the curren
 
 ## Side-by-side comparison (HaloDB vs RocksDB)
 
-`Comparison` runs an identical workload — fill, then multithreaded random reads — against each
-engine and prints their write throughput and read throughput/latency next to each other. Both
-engines see the same keys and the same random read order (fixed seed), so the numbers are directly
-comparable.
+`Comparison` runs an identical workload — fill, multithreaded random reads, then prefix scans —
+against each engine and prints their write throughput, read throughput/latency, and prefix-scan
+throughput next to each other. Both engines see the same keys and the same random read order (fixed
+seed), so the numbers are directly comparable. HaloDB's prefix scan uses the ordered index
+(`setUseOrderedIndex`); RocksDB's uses a `RocksIterator` over its sorted keyspace.
 
 ```bash
 sbt "benchmarks/run quick"     # ~2M x 1KB records, fits in RAM — fast iteration
@@ -25,17 +26,25 @@ sbt "benchmarks/run quick --rocks-compress=true"      # enable RocksDB LZ4 compr
 sbt "benchmarks/run quick --dir=/mnt/ssd/bench"        # data directory (default: target/benchmark-data)
 ```
 
-Sample output (`quick`, in-RAM, one workstation — directional only):
+Sample output (one workstation, in page cache — directional only):
 
 ```
-metric                            halodb           rocksdb
-WRITE ops/sec                    302,638         1,104,091
-WRITE MB/sec                       295.5           1,078.2
-READ ops/sec                   2,749,455         1,018,378
-READ p50 (us)                        2.4               6.7
-READ p99 (us)                        6.6              19.8
-READ p99.9 (us)                     16.0              41.6
+                            1KB records (quick)        16KB records
+metric                      halodb     rocksdb      halodb     rocksdb
+WRITE ops/sec               305,508  1,407,542      71,183     222,664
+READ  ops/sec             2,929,898  1,488,505     635,900     493,585
+READ  p50 (us)                  2.1        4.7         (HaloDB wins reads)
+PREFIX keys/sec              30,695  1,156,098     115,653     192,062
 ```
+
+Reading the three dimensions:
+* **Point reads** — HaloDB wins (read-amplification-1), ~1.3–2x.
+* **Writes** — RocksDB wins (LSM), ~3–4.6x.
+* **Prefix/range scans** — RocksDB wins, but the margin depends heavily on record size. RocksDB stores
+  values sorted, so a range scan reads them sequentially; HaloDB reads each matched record
+  individually (its data is append-ordered, not key-ordered). For **small** records that per-record
+  read is seek/overhead-bound and RocksDB is ~38x faster; for **large** records it is transfer-bound
+  and the gap collapses to ~1.7x. So HaloDB's prefix scanning is most competitive for large records.
 
 ### Reading the results — caveats
 

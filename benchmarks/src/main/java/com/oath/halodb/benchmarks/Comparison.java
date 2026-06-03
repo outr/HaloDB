@@ -58,6 +58,10 @@ public class Comparison {
         double readSeconds;
         Histogram readLatencyNanos;
         long misses;
+        int prefixScans;
+        long prefixMatched;
+        double prefixScansPerSec;
+        double prefixKeysPerSec;
     }
 
     public static void main(String[] args) throws Exception {
@@ -142,6 +146,25 @@ public class Comparison {
         for (ReadWorker w : workers) r.readLatencyNanos.add(w.histogram);
         System.out.printf("  read: %,.0f ops/s, %.1fs, %d misses%n",
             r.readOpsPerSec, r.readSeconds, misses);
+
+        // ---- PREFIX SCAN: scan keys sharing the first 7 bytes (~256-key blocks), random blocks ----
+        int scans = (int) Math.min(2000, Math.max(1, cfg.records / 256));
+        Random pr = new Random(SEED + 999);
+        byte[] full = new byte[8];
+        long matched = 0;
+        long pStart = System.nanoTime();
+        for (int i = 0; i < scans; i++) {
+            long id = Math.floorMod(pr.nextLong(), cfg.records);
+            writeLong(full, id);
+            matched += db.prefixScan(java.util.Arrays.copyOf(full, 7)); // first 7 bytes -> ~256-key block
+        }
+        double prefixSeconds = (System.nanoTime() - pStart) / 1e9;
+        r.prefixScans = scans;
+        r.prefixMatched = matched;
+        r.prefixScansPerSec = scans / prefixSeconds;
+        r.prefixKeysPerSec = matched / prefixSeconds;
+        System.out.printf("  prefixScan: %d scans, %,d matched, %.1fs -> %,.0f scans/s, %,.0f keys/s%n",
+            scans, matched, prefixSeconds, r.prefixScansPerSec, r.prefixKeysPerSec);
         return r;
     }
 
@@ -189,14 +212,18 @@ public class Comparison {
         row("READ p99 (us)", rs, r -> us(r.readLatencyNanos.getValueAtPercentile(99)));
         row("READ p99.9 (us)", rs, r -> us(r.readLatencyNanos.getValueAtPercentile(99.9)));
         row("READ max (us)", rs, r -> us(r.readLatencyNanos.getMaxValue()));
+        row("PREFIX scans/sec", rs, r -> String.format("%,.0f", r.prefixScansPerSec));
+        row("PREFIX keys/sec", rs, r -> String.format("%,.0f", r.prefixKeysPerSec));
 
-        // Relative read/write throughput (fastest = 1.00x) for a quick at-a-glance read.
+        // Relative read/write/scan throughput (fastest = 1.00x) for a quick at-a-glance read.
         if (rs.size() == 2) {
             System.out.println("--------------------------------------------");
             double wFast = rs.stream().mapToDouble(r -> r.writeOpsPerSec).max().orElse(1);
             double rFast = rs.stream().mapToDouble(r -> r.readOpsPerSec).max().orElse(1);
+            double pFast = rs.stream().mapToDouble(r -> r.prefixKeysPerSec).max().orElse(1);
             row("WRITE relative", rs, r -> String.format("%.2fx", r.writeOpsPerSec / wFast));
             row("READ relative", rs, r -> String.format("%.2fx", r.readOpsPerSec / rFast));
+            row("PREFIX relative", rs, r -> String.format("%.2fx", r.prefixKeysPerSec / pFast));
         }
         System.out.println("============================================");
     }

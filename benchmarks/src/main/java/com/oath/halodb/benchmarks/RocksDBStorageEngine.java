@@ -8,6 +8,7 @@ import org.rocksdb.CompressionType;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteOptions;
 
 import java.io.File;
@@ -50,6 +51,24 @@ public class RocksDBStorageEngine implements StorageEngine {
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public long prefixScan(byte[] prefix) {
+        try (RocksIterator it = db.newIterator()) {
+            long count = 0, bytes = 0;
+            for (it.seek(prefix); it.isValid() && startsWith(it.key(), prefix); it.next()) {
+                bytes += it.value().length; // touch the value
+                count++;
+            }
+            return count;
+        }
+    }
+
+    private static boolean startsWith(byte[] key, byte[] prefix) {
+        if (key.length < prefix.length) return false;
+        for (int i = 0; i < prefix.length; i++) if (key[i] != prefix[i]) return false;
+        return true;
     }
 
     @Override
