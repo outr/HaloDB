@@ -7,7 +7,7 @@
 
 package com.oath.halodb;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 final class OffHeapHashTableStats {
 
@@ -73,7 +73,7 @@ final class OffHeapHashTableStats {
     }
 
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
             .add("hitCount", hitCount)
             .add("missCount", missCount)
             .add("size", size)
