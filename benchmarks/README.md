@@ -26,15 +26,47 @@ sbt "benchmarks/run quick --rocks-compress=true"      # enable RocksDB LZ4 compr
 sbt "benchmarks/run quick --dir=/mnt/ssd/bench"        # data directory (default: target/benchmark-data)
 ```
 
-Sample output (one workstation, in page cache — directional only):
+Sample results (one workstation, in page cache — directional only). See
+[`docs/benchmarks.md`](../docs/benchmarks.md) for the full write-up.
 
+Random read throughput — **ops/sec, higher is better** (HaloDB wins ~1.3–2×):
+
+```mermaid
+xychart-beta
+    title "Random read throughput (ops/sec)"
+    x-axis ["HaloDB 1KB", "RocksDB 1KB", "HaloDB 16KB", "RocksDB 16KB"]
+    y-axis "ops/sec"
+    bar [2815617, 1676199, 635900, 493585]
 ```
-                            1KB records (quick)        16KB records
-metric                      halodb     rocksdb      halodb     rocksdb
-WRITE ops/sec               326,630  1,540,575      71,183     222,664
-READ  ops/sec             2,815,617  1,676,199     635,900     493,585
-READ  p50 (us)                  2.1        4.7         (HaloDB wins reads)
-PREFIX keys/sec           1,051,824  1,236,131     265,794     209,773
+
+Read latency — **p50 µs, lower is better** (1KB, page-cache resident):
+
+```mermaid
+xychart-beta
+    title "Read latency p50 (microseconds)"
+    x-axis ["HaloDB 1KB", "RocksDB 1KB"]
+    y-axis "microseconds"
+    bar [2.1, 4.7]
+```
+
+Write throughput — **ops/sec, higher is better** (RocksDB wins ~3–4.6×):
+
+```mermaid
+xychart-beta
+    title "Write throughput (ops/sec)"
+    x-axis ["HaloDB 1KB", "RocksDB 1KB", "HaloDB 16KB", "RocksDB 16KB"]
+    y-axis "ops/sec"
+    bar [326630, 1540575, 71183, 222664]
+```
+
+Prefix-scan throughput — **keys/sec, higher is better** (on par; HaloDB faster at 16KB):
+
+```mermaid
+xychart-beta
+    title "Prefix-scan throughput (keys/sec)"
+    x-axis ["HaloDB 1KB", "RocksDB 1KB", "HaloDB 16KB", "RocksDB 16KB"]
+    y-axis "keys/sec"
+    bar [1051824, 1236131, 265794, 209773]
 ```
 
 Reading the three dimensions:
