@@ -228,7 +228,35 @@ Therefore, don't interrupt threads while they are doing IO operations.
 
 ### Restrictions. 
 * Size of keys is restricted to 128 bytes.  
-* HaloDB don't support range scans or ordered access.
+* By default HaloDB does not support range scans or ordered access. An optional ordered index enables
+  prefix/range scans — see below.
+
+### Prefix and range scanning (optional).
+By default the in-memory index is a hash table, so reads are point lookups only. Enabling the ordered
+index maintains an additional off-heap [adaptive radix tree](https://db.in.tum.de/~leis/papers/ART.pdf)
+of the key set alongside the hash table, which adds ordered prefix/range scans:
+
+```java
+HaloDBOptions options = new HaloDBOptions();
+options.setUseOrderedIndex(true);   // maintain the ordered side index
+options.setFixedKeySize(8);         // ordered index requires fixed-length keys
+
+HaloDB db = HaloDB.open(directory, options);
+...
+// iterate, in ascending key order, every record whose key begins with `prefix`
+Iterator<Record> it = db.prefixScan(prefix);
+while (it.hasNext()) {
+    Record record = it.next();
+    ...
+}
+```
+
+Notes:
+* The hash index is unchanged, so **point-read latency is unaffected**; the cost of the ordered index
+  is per-write maintenance and roughly 2x the index memory.
+* All keys must be exactly `fixedKeySize` bytes (the ordered index does not support variable-length keys).
+* A `prefixScan` snapshots its matching keys, then reads each record on demand; deletes after the
+  snapshot are skipped. Very large prefix scans hold their matching key set in memory.
 
 # Benchmarks.
 [Benchmarks](docs/benchmarks.md).

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -117,7 +118,8 @@ class HaloDBInternal {
 
             dbInternal.inMemoryIndex = new InMemoryIndex(
                 options.getNumberOfRecords(), options.isUseMemoryPool(),
-                options.getFixedKeySize(), options.getMemoryPoolChunkSize()
+                options.getFixedKeySize(), options.getMemoryPoolChunkSize(),
+                options.isUseOrderedIndex()
             );
 
             long maxSequenceNumber = dbInternal.buildInMemoryIndex();
@@ -218,6 +220,9 @@ class HaloDBInternal {
     boolean put(byte[] key, byte[] value) throws IOException, HaloDBException {
         if (key.length > Byte.MAX_VALUE) {
             throw new HaloDBException("key length cannot exceed " + Byte.MAX_VALUE);
+        }
+        if (options.isUseOrderedIndex() && key.length != options.getFixedKeySize()) {
+            throw new HaloDBException("ordered index requires keys of exactly fixedKeySize (" + options.getFixedKeySize() + ") bytes");
         }
 
         //TODO: more fine-grained locking is possible. 
@@ -910,6 +915,47 @@ class HaloDBInternal {
         if (options.isUseMemoryPool() && (options.getFixedKeySize() < 0 || options.getFixedKeySize() > Byte.MAX_VALUE)) {
             throw new IllegalArgumentException("fixedKeySize must be set and should be less than 128 when using memory pool");
         }
+        if (options.isUseOrderedIndex() && (options.getFixedKeySize() <= 0 || options.getFixedKeySize() > Byte.MAX_VALUE)) {
+            throw new IllegalArgumentException("ordered index requires a fixedKeySize in (0, 127]; all keys must be exactly that length");
+        }
+    }
+
+    /**
+     * Iterates, in ascending key order, the records whose key begins with {@code prefix}. Requires
+     * the ordered index (HaloDBOptions.setUseOrderedIndex). The matching keys are snapshotted up
+     * front; each record's value is then read on demand. Keys deleted after the snapshot are skipped.
+     */
+    Iterator<Record> prefixScan(byte[] prefix) throws HaloDBException {
+        if (!inMemoryIndex.hasOrderedIndex()) {
+            throw new HaloDBException("prefixScan requires the ordered index; set HaloDBOptions.setUseOrderedIndex(true)");
+        }
+        List<byte[]> keys = inMemoryIndex.prefixScanKeys(prefix);
+        return new Iterator<Record>() {
+            int i = 0;
+            Record next = advance();
+
+            private Record advance() {
+                while (i < keys.size()) {
+                    byte[] k = keys.get(i++);
+                    try {
+                        byte[] v = get(k, 1);
+                        if (v != null) return new Record(k, v);
+                    } catch (IOException | HaloDBException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return null;
+            }
+
+            @Override public boolean hasNext() { return next != null; }
+
+            @Override public Record next() {
+                if (next == null) throw new java.util.NoSuchElementException();
+                Record r = next;
+                next = advance();
+                return r;
+            }
+        };
     }
 
     boolean isClosing() {

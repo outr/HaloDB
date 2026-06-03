@@ -41,6 +41,11 @@ public class HaloDBOptions implements Cloneable {
 
     private int memoryPoolChunkSize = 16 * 1024 * 1024;
 
+    // When true, maintains an ordered (off-heap ART) side index alongside the hash index to support
+    // prefix/range scans. Requires fixed-length keys (fixedKeySize). The hash index is unchanged, so
+    // point reads are unaffected; the cost is per-write side-index maintenance and ~2x index memory.
+    private boolean useOrderedIndex = false;
+
     // Number of threads to scan index and tombstone files
     // to build in-memory index at db open
     private int buildIndexThreads = 1;
@@ -157,6 +162,14 @@ public class HaloDBOptions implements Cloneable {
 
     public void setFixedKeySize(int fixedKeySize) {
         this.fixedKeySize = fixedKeySize;
+    }
+
+    public boolean isUseOrderedIndex() {
+        return useOrderedIndex;
+    }
+
+    public void setUseOrderedIndex(boolean useOrderedIndex) {
+        this.useOrderedIndex = useOrderedIndex;
     }
 
     public int getMemoryPoolChunkSize() {
