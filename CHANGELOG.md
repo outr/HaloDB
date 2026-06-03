@@ -1,6 +1,10 @@
 # HaloDB Change Log
 
 ## Unreleased
+* Added optional prefix/range scanning via an off-heap adaptive radix tree (ART) ordered index,
+  enabled with `HaloDBOptions.setUseOrderedIndex(true)` (requires a fixed key size). The hash index
+  is unchanged, so point-read latency is unaffected; new `HaloDB.prefixScan(byte[])` returns records
+  in ascending key order.
 * Migrated off-heap memory access from `sun.misc.Unsafe` (deprecated for removal in JDK 23+) to the
   Foreign Function & Memory API (`java.lang.foreign`). Resolves issue #63.
 * Off-heap allocation now uses libc `malloc`/`free` via FFM downcalls; the JNA dependency has been removed.

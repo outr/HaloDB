@@ -84,6 +84,15 @@ public final class HaloDB {
         return new HaloDBKeyIterator(dbInternal);
     }
 
+    /**
+     * Iterates, in ascending key order, the records whose key begins with {@code prefix}.
+     * Requires {@code HaloDBOptions.setUseOrderedIndex(true)} (with a fixed key size); otherwise
+     * throws {@link HaloDBException}.
+     */
+    public java.util.Iterator<Record> prefixScan(byte[] prefix) throws HaloDBException {
+        return dbInternal.prefixScan(prefix);
+    }
+
     public void pauseCompaction() throws HaloDBException {
         try {
             dbInternal.pauseCompaction();
