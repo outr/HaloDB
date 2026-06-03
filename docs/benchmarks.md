@@ -1,75 +1,71 @@
-# Benchmarks  
-  
-  Benchmarks were run to compare HaloDB against RocksDB and KyotoCabinet.
-  KyotoCabinet was chosen as we were using it in production. RockDB was chosen as it is a well known storage engine
-  with good documentation and a large community. HaloDB and KyotoCabinet supports only a subset of RocksDB's features, therefore the comparison is not exactly fair to RocksDB.
-       
-  All benchmarks were run on bare-metal box with the following specifications:
-  * 2 x Xeon E5-2680 2.50GHz (HT enabled, 24 cores, 48 threads) 
-  * 128 GB of RAM.
-  * 1 Samsung PM863 960 GB SSD with XFS file system. 
-  * RHEL 6 with kernel 2.6.32.  
-  
-  
-  Key size was 8 bytes and value size 1024 bytes. Tests created a db with 500 million records with total size of approximately 
-  500GB. Since this is significantly bigger than the available memory it will ensure that the workload will be IO bound, which is what HaloDB was primarily designed for.
-  
-  Benchmark tool can be found [here](../benchmarks)  
-  
-## Test 1: Fill Sequential.
-Create a new db by inserting 500 million records in sorted key order.
-![HaloDB](https://raw.githubusercontent.com/amannaly/HaloDB-images/master/images/fill-sequential.png)
+# Benchmarks
 
-DB size at the end of the test run. 
+HaloDB is benchmarked side-by-side against [RocksDB](https://rocksdb.org) (`rocksdbjni` 10.10.1)
+using the [`benchmarks`](../benchmarks) sbt subproject, which builds against the current HaloDB
+source. The comparison covers the three dimensions where the engines differ most: **point reads,
+writes, and prefix/range scans**.
 
-| Storage Engine    |    GB     |
-| -------------     | --------- |
-| HaloDB            | 503       |
-| KyotoCabinet      | 609       |
-| RocksDB           | 487       |
+> These numbers were collected on a single developer workstation (Oracle GraalVM 25, NVMe SSD) with
+> the dataset resident in the OS page cache, so they are **directional** — what matters is the
+> relative behavior; absolute numbers depend on your hardware, dataset-vs-RAM ratio, and tuning.
+> Reproduce with `sbt "benchmarks/run quick"` (see the [benchmark module](../benchmarks)).
 
+## Setup
 
-## Test 2: Random Read
-Measure random read performance with 32 threads doing _640 million reads_ in total. Read ahead was disabled for this test.    
-![HaloDB](https://raw.githubusercontent.com/amannaly/HaloDB-images/master/images/random-reads.png)
-   
-## Test 3: Random Update.
-Perform 500 million updates to randomly selected records.    
-![HaloDB](https://raw.githubusercontent.com/amannaly/HaloDB-images/master/images/random-update.png)
+- 8-byte keys; values of **1KB** (small) and **16KB** (large).
+- 2,000,000 records (1KB) / 300,000 records (16KB) — fits in page cache.
+- Reads are random (fixed seed) across all keys.
+- HaloDB runs with the ordered index enabled (`HaloDBOptions.setUseOrderedIndex(true)`) so prefix
+  scans are available; RocksDB scans via a `RocksIterator` over its sorted keyspace. Prefix scans
+  read ~256-key blocks, touching each matched value.
 
-DB size at the end of the test run. 
+## Results
 
-| Storage Engine    |    GB     |
-| -------------     | --------- |
-| HaloDB            | 556       |
-| KyotoCabinet      | 609       |
-| RocksDB           | 504       |
+| metric | 1KB · HaloDB | 1KB · RocksDB | 16KB · HaloDB | 16KB · RocksDB |
+| --- | ---: | ---: | ---: | ---: |
+| WRITE ops/sec   | 326,630   | 1,540,575 | 71,183  | 222,664 |
+| READ ops/sec    | 2,815,617 | 1,676,199 | 635,900 | 493,585 |
+| READ p50 (µs)   | 2.1       | 4.7       | —       | —       |
+| PREFIX keys/sec | 1,051,824 | 1,236,131 | 265,794 | 209,773 |
 
-## Test 4: Fill Random. 
-Insert 500 million records into an empty db in random order. 
-![HaloDB](https://raw.githubusercontent.com/amannaly/HaloDB-images/master/images/fill-random.png)
+### Point reads — HaloDB wins (~1.3–2×)
 
-## Test 5: Read and update. 
-32 threads doing a total of 640 million random reads and one thread doing random updates as fast as possible.  
-![HaloDB](https://raw.githubusercontent.com/amannaly/HaloDB-images/master/images/read-update.png)
+HaloDB keeps all keys in an in-memory index and stores values in append-only log files, giving
+**read amplification of 1**: at most one disk seek per `get`, with submillisecond latency. RocksDB's
+LSM may consult several levels per read (mitigated by bloom filters). This is HaloDB's core strength.
 
-## Why HaloDB is fast.
-HaloDB doesn't claim to be always better than RocksDB or KyotoCabinet. HaloDB was written for a specific type of workload, and therefore had
-the advantage of optimizing for that workload; the trade-offs that HaloDB makes might make it sub-optimal for other workloads (best to run benchmarks to verify). 
-HaloDB also offers only a small subset of features compared to other storage engines like RocksDB.  
-   
-All writes to HaloDB are sequential writes to append-only log files. HaloDB uses a background compaction job to clean up stale data. 
-The threshold at which a file is compacted can be tuned and this determines HaloDB's write amplification and space amplification. 
-A compaction threshold of 50% gives a write amplification of only 2, this coupled with the fact that we do only sequential writes 
-are the primary reasons for HaloDB’s high write throughput. Additionally, the only meta-data that HaloDB need to modify during writes are 
-those of the index in memory. The trade-off here is that HaloDB will occupy more space on disk.    
+### Writes — RocksDB wins (~3–4.6×)
 
-To lookup the value for a key its corresponding metadata is first read from the in-memory index and then the value is read from disk. 
-Therefore each lookup request requires at most a single read from disk, giving us a read amplification of 1, and is primarily responsible 
-for HaloDB’s low read latencies. The trade-off here is that we need to store all the keys and their associated metadata in memory. HaloDB
-also need to scan all the keys during startup to build the in-memory index. This, depending on the number of keys, might take a few minutes.   
+RocksDB's LSM buffers writes in an in-memory memtable and flushes sequentially, so ingest is very
+fast. HaloDB appends each record to its log and updates the index; durable and simple, but lower raw
+write throughput. This is the trade-off HaloDB makes in favor of read latency and crash-recovery
+simplicity.
 
-HaloDB avoids doing in-place updates and doesn't need record level locks. A type of MVCC is inherent in the design of all log-structured storage systems. This also helps with performance even under high read and write throughput.
+### Prefix/range scans — roughly on par; HaloDB faster for large records
 
-HaloDB also doesn't support range scans and therefore doesn't pay the cost associated with storing data in a format suitable for efficient range scans.
+Prefix scanning is available via HaloDB's optional ordered index — an off-heap
+[adaptive radix tree](https://db.in.tum.de/~leis/papers/ART.pdf) of the key set maintained alongside
+the hash index. A scan seeks directly to the prefix's subtree (O(prefix length + matches)) and reads
+each matched record through the normal point-read path; RocksDB iterates its sorted keyspace,
+reading values sequentially.
 
+The margin depends on record size: for **small (1KB)** records HaloDB is ~0.85× RocksDB (the
+per-record read is overhead-bound), and for **large (16KB)** records HaloDB is **~1.3× faster** (the
+read becomes transfer-bound, so HaloDB's one-seek-per-record is near-optimal). HaloDB's prefix
+scanning is therefore competitive across the board and strongest for large records — the workload it
+targets. The ordered index does not change point-read latency (the hash index is untouched); its
+cost is per-write maintenance and roughly 2× index memory, and it requires fixed-length keys.
+
+## Why HaloDB makes these trade-offs
+
+HaloDB was written for read-latency-critical, IO-bound workloads of large records. It optimizes for
+exactly that — one disk seek per read, low and predictable tail latency — and accepts lower write
+throughput and a smaller feature set than a general-purpose engine like RocksDB. As the numbers show,
+it is not universally faster; it is faster *where it was designed to be*. Always benchmark your own
+workload.
+
+## Historical benchmark
+
+The original large-scale benchmark (500M records ≈ 500GB, on a 128GB Xeon server, vs RocksDB and
+KyotoCabinet) from the upstream Yahoo project is preserved in this file's
+[git history](https://github.com/yahoo/HaloDB/blob/master/docs/benchmarks.md).
