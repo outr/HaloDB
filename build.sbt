@@ -86,3 +86,24 @@ libraryDependencies ++= Seq(
   "org.jmockit" % "jmockit" % "1.49" % Test,
   "org.assertj" % "assertj-core" % "3.8.0" % Test
 )
+
+// Benchmark subproject: side-by-side comparison against RocksDB. Depends on HaloDB source
+// directly (no publishLocal needed) and is NOT aggregated, so `sbt test` stays root-only.
+// Run with: sbt "benchmarks/run quick"  (or large, plus --records/--reads/... overrides)
+lazy val benchmarks = (project in file("benchmarks"))
+  .dependsOn(LocalRootProject)
+  .settings(
+    name := "halodb-benchmarks",
+    crossPaths := false,
+    autoScalaLibrary := false,
+    publish / skip := true,
+    Compile / mainClass := Some("com.oath.halodb.benchmarks.Comparison"),
+    // HaloDB's off-heap layer uses FFM restricted methods; RocksDB loads a native lib.
+    fork := true,
+    javaOptions ++= Seq("--enable-native-access=ALL-UNNAMED", "-Xmx4g"),
+    libraryDependencies ++= Seq(
+      "org.rocksdb" % "rocksdbjni" % "10.10.1",
+      "org.hdrhistogram" % "HdrHistogram" % "2.1.12",
+      "org.slf4j" % "slf4j-simple" % "1.7.12"
+    )
+  )

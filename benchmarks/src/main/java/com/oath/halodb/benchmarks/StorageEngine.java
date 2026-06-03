@@ -12,6 +12,9 @@ public interface StorageEngine {
 
     byte[] get(byte[] key);
 
+    /** Scans all records whose key begins with {@code prefix}, reading each value; returns the count. */
+    default long prefixScan(byte[] prefix) { throw new UnsupportedOperationException(); }
+
     default void delete(byte[] key) {};
 
     void open();
