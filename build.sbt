@@ -38,6 +38,10 @@ testNG := {
   IO.write(suite,
     """<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
       |<suite name="HaloDB" verbose="1">
+      |  <!-- Activate jmockit's per-test scoping so MockUps are torn down after each test. Without
+      |       it, a fault-injection mock (e.g. CompactionWithErrorsTest) leaks into a later test's
+      |       compaction thread and fails it intermittently. -->
+      |  <listeners><listener class-name="mockit.integration.testng.TestNGRunnerDecorator"/></listeners>
       |  <test name="all"><packages><package name="com.oath.halodb"/></packages></test>
       |</suite>""".stripMargin)
   val options = ForkOptions().withRunJVMOptions(Vector(
