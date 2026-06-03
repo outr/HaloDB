@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="220" viewBox="0 0 940 220" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+<rect width="940" height="220" fill="#ffffff"/>
+<text x="24" y="40" font-size="22" font-weight="600" fill="#202124">Read latency p50 (microseconds) — lower is better</text>
+<rect x="732" y="56" width="14" height="14" rx="2" fill="#4285F4"/>
+<text x="752" y="68" font-size="14" fill="#5f6368">HaloDB</text>
+<rect x="828" y="56" width="14" height="14" rx="2" fill="#E8B33A"/>
+<text x="848" y="68" font-size="14" fill="#5f6368">RocksDB</text>
+<line x1="70.0" y1="96" x2="70.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="70.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">0</text>
+<line x1="238.0" y1="96" x2="238.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="238.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">1</text>
+<line x1="406.0" y1="96" x2="406.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="406.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">2</text>
+<line x1="574.0" y1="96" x2="574.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="574.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">3</text>
+<line x1="742.0" y1="96" x2="742.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="742.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">4</text>
+<line x1="910.0" y1="96" x2="910.0" y2="164" stroke="#e3e6ea" stroke-width="1"/>
+<text x="910.0" y="186" font-size="12" fill="#5f6368" text-anchor="middle">5</text>
+<line x1="70" y1="96" x2="70" y2="164" stroke="#bdc1c6" stroke-width="1.5"/>
+<rect x="70" y="96" width="352.8" height="30" fill="#4285F4"/>
+<text x="412.8" y="116.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">2.1 µs</text>
+<rect x="70" y="134" width="789.6" height="30" fill="#E8B33A"/>
+<text x="849.6" y="154.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">4.7 µs</text>
+<text x="58" y="135.0" font-size="14" fill="#5f6368" text-anchor="end">1KB</text>
+</svg>
