@@ -444,8 +444,73 @@ final class OffHeapART {
         };
     }
 
+    /**
+     * Iterates, in ascending order, every key beginning with {@code prefix}. Seeks directly to the
+     * subtree rooted at the prefix path — O(prefix length + matches) — rather than scanning from the
+     * start of the keyspace. Every leaf under that subtree shares the prefix by construction, so no
+     * per-key filtering is needed.
+     */
     Iterator<byte[]> prefixScan(byte[] prefix) {
-        return scan(prefix, OrderedKeyIndex.prefixUpperBound(prefix));
+        ensureOpen();
+        if (root == 0) return java.util.Collections.emptyIterator();
+        long node = root;
+        int depth = 0;
+        while (depth < prefix.length && ((int) (node & 7)) != LEAF) {
+            node = findChildTagged(node & MASK, (int) (node & 7), prefix[depth] & 0xFF);
+            if (node == 0) return java.util.Collections.emptyIterator();
+            depth++;
+        }
+        if (((int) (node & 7)) == LEAF) {
+            // a lazy leaf short-circuited the descent; include it only if it actually matches
+            long leaf = node & MASK;
+            return keyHasPrefix(leaf, prefix)
+                ? java.util.List.of(leafKey(leaf)).iterator()
+                : java.util.Collections.emptyIterator();
+        }
+        return subtreeLeaves(node); // every leaf under here has the prefix
+    }
+
+    private boolean keyHasPrefix(long leaf, byte[] prefix) {
+        for (int i = 0; i < prefix.length; i++) if (Uns.getByte(leaf, 8 + i) != prefix[i]) return false;
+        return true;
+    }
+
+    /** DFS over a subtree (tagged node), yielding every leaf key in ascending order. */
+    private Iterator<byte[]> subtreeLeaves(long subtreeRootTagged) {
+        return new Iterator<>() {
+            final long[] sn = new long[keyLen + 2];
+            final int[] sc = new int[keyLen + 2];
+            int sp = 0;
+            byte[] pending;
+
+            {
+                sn[0] = subtreeRootTagged & MASK;
+                sc[0] = 0;
+                pending = advance();
+            }
+
+            private byte[] advance() {
+                while (sp >= 0) {
+                    long n = sn[sp];
+                    int b = nextChildByte(n, sc[sp]);
+                    if (b > 255) { sp--; continue; }
+                    sc[sp] = b + 1;
+                    long child = findChildTagged(n, hdrType(n), b);
+                    if ((child & 7) == LEAF) return leafKey(child & MASK);
+                    sp++; sn[sp] = child & MASK; sc[sp] = 0;
+                }
+                return null;
+            }
+
+            @Override public boolean hasNext() { return pending != null; }
+
+            @Override public byte[] next() {
+                if (pending == null) throw new NoSuchElementException();
+                byte[] k = pending;
+                pending = advance();
+                return k;
+            }
+        };
     }
 
     private static int cmp(byte[] a, byte[] b) {
