@@ -77,6 +77,37 @@ public class HaloDBTest extends TestBase {
     }
 
     @Test(dataProvider = "Options")
+    public void testContainsAndValueSize(HaloDBOptions options) throws HaloDBException {
+        String directory = TestUtils.getTestDirectory("HaloDBTest", "testContainsAndValueSize");
+
+        options.setCompactionDisabled(true);
+
+        HaloDB db = getTestDB(directory, options);
+
+        int noOfRecords = 10_000;
+        List<Record> records = TestUtils.insertRandomRecordsOfSize(db, noOfRecords, 128);
+
+        // present keys: contains() is true and valueSize() reports the stored value length.
+        for (Record record : records) {
+            Assert.assertTrue(db.contains(record.getKey()));
+            Assert.assertEquals(db.valueSize(record.getKey()), record.getValue().length);
+        }
+
+        // absent keys: contains() is false and valueSize() returns -1.
+        for (int i = 0; i < noOfRecords; i++) {
+            byte[] missing = TestUtils.generateRandomByteArray(64);
+            Assert.assertFalse(db.contains(missing));
+            Assert.assertEquals(db.valueSize(missing), -1);
+        }
+
+        // after delete, the key is reported absent.
+        byte[] deletedKey = records.get(0).getKey();
+        db.delete(deletedKey);
+        Assert.assertFalse(db.contains(deletedKey));
+        Assert.assertEquals(db.valueSize(deletedKey), -1);
+    }
+
+    @Test(dataProvider = "Options")
     public void testCreateCloseAndOpenDB(HaloDBOptions options) throws HaloDBException {
 
         String directory = TestUtils.getTestDirectory("HaloDBTest", "testCreateCloseAndOpenDB");

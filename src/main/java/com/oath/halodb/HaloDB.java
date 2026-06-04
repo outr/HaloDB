@@ -56,6 +56,18 @@ public final class HaloDB {
         }
     }
 
+    /** Returns true if {@code key} is present in the db. Resolved from the in-memory index only,
+     *  with no disk access. */
+    public boolean contains(byte[] key) {
+        return dbInternal.contains(key);
+    }
+
+    /** Returns the size in bytes of the value stored for {@code key}, or -1 if the key is absent.
+     *  Read from the in-memory index without reading the value from disk. */
+    public int valueSize(byte[] key) {
+        return dbInternal.valueSize(key);
+    }
+
     public void close() throws HaloDBException {
         try {
             dbInternal.close();
