@@ -21,10 +21,15 @@ Override any preset value, or pick engines:
 
 ```bash
 sbt "benchmarks/run quick --records=5000000 --record-size=512 --reads=10000000 --read-threads=16"
+sbt "benchmarks/run quick --key-size=1024"           # large keys (default 8 B; min 8 B)
 sbt "benchmarks/run quick --engines=halodb"          # one engine only
 sbt "benchmarks/run quick --rocks-compress=true"      # enable RocksDB LZ4 compression
 sbt "benchmarks/run quick --dir=/mnt/ssd/bench"        # data directory (default: target/benchmark-data)
 ```
+
+`--key-size` sweeps key length to measure the point-read/write path on large keys. Prefix scan is
+skipped when `key-size` exceeds 127 (HaloDB's ordered index requires fixed keys ≤ 127 B); large keys
+still work for point reads/writes via the hash index.
 
 Sample results (one workstation, in page cache — directional only). See
 [`docs/benchmarks.md`](../docs/benchmarks.md) for the full write-up.

@@ -149,6 +149,17 @@ CHARTS = {
         ["1KB", "16KB", "256KB", "1MB", "10MB"],
         {"HaloDB": [1051824, 265794, 32905, 9639, 847],
          "RocksDB": [1236131, 209773, 21629, 5068, 421]}, "", log=True),
+    # Key-size scaling (256-byte values, 500k records). Point reads/writes only.
+    "read-by-keysize.svg": chart(
+        "Random read throughput by key size (ops/sec) — higher is better",
+        ["8 B", "64 B", "256 B", "1 KB", "4 KB"],
+        {"HaloDB": [2735662, 2756031, 2167669, 2053670, 1874241],
+         "RocksDB": [2078608, 2191073, 1524574, 2028665, 1581044]}, ""),
+    "write-by-keysize.svg": chart(
+        "Write throughput by key size (ops/sec) — higher is better",
+        ["8 B", "64 B", "256 B", "1 KB", "4 KB"],
+        {"HaloDB": [400193, 365036, 323389, 196893, 77090],
+         "RocksDB": [1762290, 1703833, 1415057, 1071512, 689119]}, ""),
 }
 
 if __name__ == "__main__":

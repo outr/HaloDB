@@ -85,6 +85,33 @@ workload HaloDB targets. The ordered index does not change point-read latency (t
 untouched); its cost is per-write maintenance and roughly 2× index memory, and it requires
 fixed-length keys.
 
+## Key-size scaling
+
+HaloDB supports **keys of any length** (the 127-byte cap was removed). With the memory pool, keys
+longer than `fixedKeySize` overflow into chained slots; with the non-pool index they're stored
+inline. To show how key size affects the point-read/write path, the workload below holds the value
+size constant (256 B, 500,000 records) and sweeps the key from 8 B to 4 KB. (Prefix scan is omitted
+here — the ordered index still requires fixed keys ≤ 127 B.)
+
+| key size | WRITE · HaloDB | WRITE · RocksDB | READ · HaloDB | READ · RocksDB | READ p50 · HaloDB | READ p50 · RocksDB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 8 B   | 400,193 | 1,762,290 | 2,735,662 | 2,078,608 | 1.8 µs | 3.5 µs |
+| 64 B  | 365,036 | 1,703,833 | 2,756,031 | 2,191,073 | 2.0 µs | 3.2 µs |
+| 256 B | 323,389 | 1,415,057 | 2,167,669 | 1,524,574 | 2.3 µs | 4.3 µs |
+| 1 KB  | 196,893 | 1,071,512 | 2,053,670 | 2,028,665 | 2.6 µs | 3.4 µs |
+| 4 KB  |  77,090 |   689,119 | 1,874,241 | 1,581,044 | 3.7 µs | 4.4 µs |
+
+![Random read throughput by key size (ops/sec) — higher is better](images/read-by-keysize.svg)
+
+![Write throughput by key size (ops/sec) — higher is better](images/write-by-keysize.svg)
+
+**Reads stay HaloDB's strength at every key size** — higher throughput and lower p50 latency than
+RocksDB from 8 B all the way to 4 KB, because a read is still one seek regardless of key length.
+**Writes cost more as keys grow:** HaloDB must append the full key to its log and (with the memory
+pool) thread it across chained index slots, so write throughput falls off faster than RocksDB's as
+keys get large. Large keys therefore fit HaloDB's read-heavy sweet spot well; very large keys on a
+write-heavy workload are where RocksDB's gap widens. As always, benchmark your own key/value mix.
+
 ## Why HaloDB makes these trade-offs
 
 HaloDB was written for read-latency-critical, IO-bound workloads of large records. It optimizes for
