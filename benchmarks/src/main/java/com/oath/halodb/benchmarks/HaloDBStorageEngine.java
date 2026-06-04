@@ -19,10 +19,16 @@ public class HaloDBStorageEngine implements StorageEngine {
 
     private HaloDB db;
     private final long noOfRecords;
+    private final int keySize;
 
     public HaloDBStorageEngine(File dbDirectory, long noOfRecords) {
+        this(dbDirectory, noOfRecords, 8);
+    }
+
+    public HaloDBStorageEngine(File dbDirectory, long noOfRecords, int keySize) {
         this.dbDirectory = dbDirectory;
         this.noOfRecords = noOfRecords;
+        this.keySize = keySize;
     }
 
     @Override
@@ -80,8 +86,13 @@ public class HaloDBStorageEngine implements StorageEngine {
         opts.setNumberOfRecords(Ints.checkedCast(2 * noOfRecords));
         opts.setCompactionJobRate(135 * 1024 * 1024);
         opts.setUseMemoryPool(true);
-        opts.setFixedKeySize(8);
-        opts.setUseOrderedIndex(true); // enable prefix/range scans
+        opts.setFixedKeySize(keySize);
+        // The ordered (ART) index requires fixed keys <= 127 bytes; enable prefix/range scans only
+        // when the configured key size fits. Larger keys still work for point reads/writes via the
+        // hash index (overflowing into chained memory-pool slots).
+        if (keySize <= 127) {
+            opts.setUseOrderedIndex(true); // enable prefix/range scans
+        }
 
         try {
             db = HaloDB.open(dbDirectory, opts);

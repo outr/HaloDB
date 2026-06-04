@@ -277,15 +277,19 @@ public class CrossCheckTest
         }
     }
 
-    @Test(dataProvider = "hashAlgorithms", dependsOnMethods = "testBasics",
-            expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = ".*exceeds max permitted size of 127")
-    public void testPutTooLargeKey(HashAlgorithm hashAlgorithm, boolean useMemoryPool) throws IOException, InterruptedException {
+    @Test(dataProvider = "hashAlgorithms", dependsOnMethods = "testBasics")
+    public void testPutLargeKey(HashAlgorithm hashAlgorithm, boolean useMemoryPool) throws IOException, InterruptedException {
+        // 1024-byte key: far larger than the old 127-byte cap, and (for the memory pool) larger
+        // than fixedKeySize so it spans several chained slots. Both segments must round-trip it.
         byte[] key = HashTableTestUtils.randomBytes(1024);
-        byte[] largeValue = HashTableTestUtils.randomBytes(fixedValueSize);
+        byte[] value = HashTableTestUtils.randomBytes(fixedValueSize);
 
         try (OffHeapHashTable<byte[]> cache = cache(hashAlgorithm, useMemoryPool, 1, -1)) {
-            cache.put(key, largeValue);
+            cache.put(key, value);
+            Assert.assertEquals(cache.get(key), value);
+            Assert.assertTrue(cache.containsKey(key));
+            Assert.assertTrue(cache.remove(key));
+            Assert.assertNull(cache.get(key));
         }
     }
 

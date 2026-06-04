@@ -16,7 +16,7 @@ public class RecordTest {
     @Test
     public void testSerializeHeader() {
 
-        byte keySize = 8;
+        int keySize = 8;
         int valueSize = 100;
         long sequenceNumber = 34543434343L;
         int version = 128;
@@ -24,7 +24,7 @@ public class RecordTest {
         Record.Header header = new Record.Header(0, version, keySize, valueSize, sequenceNumber);
         ByteBuffer serialized = header.serialize();
 
-        Assert.assertEquals(keySize, serialized.get(Record.Header.KEY_SIZE_OFFSET));
+        Assert.assertEquals(keySize, serialized.getInt(Record.Header.KEY_SIZE_OFFSET));
         Assert.assertEquals(valueSize, serialized.getInt(Record.Header.VALUE_SIZE_OFFSET));
         Assert.assertEquals(sequenceNumber, serialized.getLong(Record.Header.SEQUENCE_NUMBER_OFFSET));
         Assert.assertEquals(Utils.toUnsignedByte(serialized.get(Record.Header.VERSION_OFFSET)), version);
@@ -34,7 +34,7 @@ public class RecordTest {
     public void testDeserializeHeader() {
 
         long checkSum = 23434;
-        byte keySize = 8;
+        int keySize = 8;
         int valueSize = 100;
         long sequenceNumber = 34543434343L;
         int version = 2;
@@ -42,7 +42,7 @@ public class RecordTest {
         ByteBuffer buffer = ByteBuffer.allocate(Record.Header.HEADER_SIZE);
         buffer.putInt(Utils.toSignedIntFromLong(checkSum));
         buffer.put((byte)version);
-        buffer.put(keySize);
+        buffer.putInt(keySize);
         buffer.putInt(valueSize);
         buffer.putLong(sequenceNumber);
         buffer.flip();
@@ -74,7 +74,7 @@ public class RecordTest {
         crc32.update(key);
         crc32.update(value);
 
-        Record.Header header = new Record.Header(0, version, (byte)key.length, value.length, sequenceNumber);
+        Record.Header header = new Record.Header(0, version, key.length, value.length, sequenceNumber);
         ByteBuffer headerBuf = header.serialize();
         headerBuf.putInt(Record.Header.CHECKSUM_OFFSET, Utils.toSignedIntFromLong(crc32.getValue()));
 

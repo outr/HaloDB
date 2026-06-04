@@ -15,15 +15,15 @@ final class NonMemoryPoolHashEntries {
     // offset of next hash entry in a hash bucket (8 bytes, long)
     static final long ENTRY_OFF_NEXT = 0;
 
-    // offset of key length (1 bytes, byte)
+    // offset of key length (4 bytes, int) — supports arbitrary-length keys
     static final long ENTRY_OFF_KEY_LENGTH = 8;
 
     // offset of data in first block
-    static final long ENTRY_OFF_DATA = 9;
+    static final long ENTRY_OFF_DATA = 12;
 
     static void init(int keyLen, long hashEntryAdr) {
         setNext(hashEntryAdr, 0L);
-        Uns.putByte(hashEntryAdr, ENTRY_OFF_KEY_LENGTH, (byte) keyLen);
+        Uns.putInt(hashEntryAdr, ENTRY_OFF_KEY_LENGTH, keyLen);
     }
 
     static long getNext(long hashEntryAdr) {
@@ -40,6 +40,6 @@ final class NonMemoryPoolHashEntries {
     }
 
     static int getKeyLen(long hashEntryAdr) {
-        return Uns.getByte(hashEntryAdr, ENTRY_OFF_KEY_LENGTH);
+        return Uns.getInt(hashEntryAdr, ENTRY_OFF_KEY_LENGTH);
     }
 }

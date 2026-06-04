@@ -14,10 +14,10 @@ class TombstoneEntry {
     /**
      * crc              - 4 byte
      * version          - 1 byte
-     * Key size         - 1 byte
      * Sequence number  - 8 byte
+     * Key size         - 4 byte
      */
-    static final int TOMBSTONE_ENTRY_HEADER_SIZE = 4 + 1 + 1 + 8;
+    static final int TOMBSTONE_ENTRY_HEADER_SIZE = 4 + 1 + 8 + 4;
     static final int CHECKSUM_SIZE = 4;
 
     static final int CHECKSUM_OFFSET = 0;
@@ -58,11 +58,11 @@ class TombstoneEntry {
     }
 
     ByteBuffer[] serialize() {
-        byte keySize = (byte)key.length;
+        int keySize = key.length;
         ByteBuffer header = ByteBuffer.allocate(TOMBSTONE_ENTRY_HEADER_SIZE);
         header.put(VERSION_OFFSET, (byte)version);
         header.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
-        header.put(KEY_SIZE_OFFSET, keySize);
+        header.putInt(KEY_SIZE_OFFSET, keySize);
         long crc32 = computeCheckSum(header.array());
         header.putInt(CHECKSUM_OFFSET, Utils.toSignedIntFromLong(crc32));
         return new ByteBuffer[] {header, ByteBuffer.wrap(key)};
@@ -72,7 +72,7 @@ class TombstoneEntry {
         long crc32 = Utils.toUnsignedIntFromInt(buffer.getInt());
         int version = Utils.toUnsignedByte(buffer.get());
         long sequenceNumber = buffer.getLong();
-        int keySize = (int)buffer.get();
+        int keySize = buffer.getInt();
         byte[] key = new byte[keySize];
         buffer.get(key);
 
@@ -88,7 +88,7 @@ class TombstoneEntry {
         long crc32 = Utils.toUnsignedIntFromInt(buffer.getInt());
         int version = Utils.toUnsignedByte(buffer.get());
         long sequenceNumber = buffer.getLong();
-        int keySize = (int)buffer.get();
+        int keySize = buffer.getInt();
         if (sequenceNumber < 0 || keySize <= 0 || version < 0 || version > 255 || buffer.remaining() < keySize)
             return null;
 
@@ -114,7 +114,7 @@ class TombstoneEntry {
         ByteBuffer header = ByteBuffer.allocate(TOMBSTONE_ENTRY_HEADER_SIZE);
         header.put(VERSION_OFFSET, (byte)version);
         header.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
-        header.put(KEY_SIZE_OFFSET, (byte)key.length);
+        header.putInt(KEY_SIZE_OFFSET, key.length);
         return computeCheckSum(header.array());
     }
 }

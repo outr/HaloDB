@@ -218,9 +218,6 @@ class HaloDBInternal {
     }
 
     boolean put(byte[] key, byte[] value) throws IOException, HaloDBException {
-        if (key.length > Byte.MAX_VALUE) {
-            throw new HaloDBException("key length cannot exceed " + Byte.MAX_VALUE);
-        }
         if (options.isUseOrderedIndex() && key.length != options.getFixedKeySize()) {
             throw new HaloDBException("ordered index requires keys of exactly fixedKeySize (" + options.getFixedKeySize() + ") bytes");
         }
@@ -923,8 +920,11 @@ class HaloDBInternal {
     }
 
     private static void checkIfOptionsAreCorrect(HaloDBOptions options) {
-        if (options.isUseMemoryPool() && (options.getFixedKeySize() < 0 || options.getFixedKeySize() > Byte.MAX_VALUE)) {
-            throw new IllegalArgumentException("fixedKeySize must be set and should be less than 128 when using memory pool");
+        if (options.isUseMemoryPool() && options.getFixedKeySize() <= 0) {
+            // fixedKeySize is the inline portion of a memory-pool slot; keys longer than it overflow
+            // into chained slots, so there is no upper bound here (a slot must still fit in a chunk,
+            // which MemoryPoolChunk validates). It must, however, be a positive value.
+            throw new IllegalArgumentException("fixedKeySize must be a positive value when using memory pool");
         }
         if (options.isUseOrderedIndex() && (options.getFixedKeySize() <= 0 || options.getFixedKeySize() > Byte.MAX_VALUE)) {
             throw new IllegalArgumentException("ordered index requires a fixedKeySize in (0, 127]; all keys must be exactly that length");

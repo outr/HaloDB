@@ -125,10 +125,6 @@ final class OffHeapHashTableImpl<V> implements OffHeapHashTable<V> {
             throw new IllegalArgumentException("old value size " + valueSize(old) + " greater than fixed value size " + fixedValueLength);
         }
 
-        if (key.length > Byte.MAX_VALUE) {
-            throw new IllegalArgumentException("key size of " + key.length + " exceeds max permitted size of " + Byte.MAX_VALUE);
-        }
-
         long hash = hasher.hash(key);
         return segment(hash).putEntry(key, value, hash, ifAbsent, old);
     }

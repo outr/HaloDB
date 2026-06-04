@@ -90,9 +90,9 @@ is allocated in native memory, outside the Java heap.
             // A segment's memory is further divided into chunks whose size can be configured here. 
             options.setMemoryPoolChunkSize(2 * 1024 * 1024);
     
-            // using a memory pool requires us to declare the size of keys in advance.
-            // Any write request with key length greater than the declared value will fail, but it
-            // is still possible to store keys smaller than this declared size. 
+            // With a memory pool, fixedKeySize declares the inline key size of each slot. Keys up to
+            // this size occupy a single slot; longer keys overflow into additional chained slots, so
+            // keys of any length are supported (set this to your typical key size for best density).
             options.setFixedKeySize(8);
     
             // Represents a database instance and provides all methods for operating on the database.
@@ -106,7 +106,7 @@ is allocated in native memory, outside the Java heap.
             // index files to create the in-memory index, which, depending on the db size, might take a few minutes.
             db = HaloDB.open(directory, options);
     
-            // key and values are byte arrays. Key size is restricted to 128 bytes.
+            // keys and values are byte arrays; keys may be of any length.
             byte[] key1 = Ints.toByteArray(200);
             byte[] value1 = "Value for key 1".getBytes();
     
@@ -227,9 +227,11 @@ index threads to number of available processors divided by number of dbs being o
 Therefore, don't interrupt threads while they are doing IO operations.
 
 ### Restrictions. 
-* Size of keys is restricted to 128 bytes.  
+* Keys may be of any length. (The optional ordered index still requires fixed-length keys.)
 * By default HaloDB does not support range scans or ordered access. An optional ordered index enables
   prefix/range scans — see below.
+* **On-disk format:** key length is stored as a 4-byte int (format version 1). Databases written by
+  versions before 0.7 (format version 0) are not readable and must be rebuilt.
 
 ### Prefix and range scanning (optional).
 By default the in-memory index is a hash table, so reads are point lookups only. Enabling the ordered

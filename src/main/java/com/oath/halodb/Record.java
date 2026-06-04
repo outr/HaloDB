@@ -20,7 +20,7 @@ public class Record {
     public Record(byte[] key, byte[] value) {
         this.key = key;
         this.value = value;
-        header = new Header(0, Versions.CURRENT_DATA_FILE_VERSION, (byte)key.length, value.length, -1);
+        header = new Header(0, Versions.CURRENT_DATA_FILE_VERSION, key.length, value.length, -1);
     }
 
     ByteBuffer[] serialize() {
@@ -28,7 +28,7 @@ public class Record {
         return new ByteBuffer[] {headerBuf, ByteBuffer.wrap(key), ByteBuffer.wrap(value)};
     }
 
-    static Record deserialize(ByteBuffer buffer, short keySize, int valueSize) {
+    static Record deserialize(ByteBuffer buffer, int keySize, int valueSize) {
         buffer.flip();
         byte[] key = new byte[keySize];
         byte[] value = new byte[valueSize];
@@ -130,28 +130,28 @@ public class Record {
         /**
          * crc              - 4 bytes.
          * version          - 1 byte.
-         * key size         - 1 bytes.
+         * key size         - 4 bytes.
          * value size       - 4 bytes.
          * sequence number  - 8 bytes.
          */
         static final int CHECKSUM_OFFSET = 0;
         static final int VERSION_OFFSET = 4;
         static final int KEY_SIZE_OFFSET = 5;
-        static final int VALUE_SIZE_OFFSET = 6;
-        static final int SEQUENCE_NUMBER_OFFSET = 10;
+        static final int VALUE_SIZE_OFFSET = 9;
+        static final int SEQUENCE_NUMBER_OFFSET = 13;
 
-        static final int HEADER_SIZE = 18;
+        static final int HEADER_SIZE = 21;
         static final int CHECKSUM_SIZE = 4;
 
         private long checkSum;
         private int version;
-        private byte keySize;
+        private int keySize;
         private int valueSize;
         private long sequenceNumber;
 
         private int recordSize;
 
-        Header(long checkSum, int version, byte keySize, int valueSize, long sequenceNumber) {
+        Header(long checkSum, int version, int keySize, int valueSize, long sequenceNumber) {
             this.checkSum = checkSum;
             this.version = version;
             this.keySize = keySize;
@@ -164,7 +164,7 @@ public class Record {
 
             long checkSum = Utils.toUnsignedIntFromInt(buffer.getInt(CHECKSUM_OFFSET));
             int version = Utils.toUnsignedByte(buffer.get(VERSION_OFFSET));
-            byte keySize = buffer.get(KEY_SIZE_OFFSET);
+            int keySize = buffer.getInt(KEY_SIZE_OFFSET);
             int valueSize = buffer.getInt(VALUE_SIZE_OFFSET);
             long sequenceNumber = buffer.getLong(SEQUENCE_NUMBER_OFFSET);
 
@@ -176,7 +176,7 @@ public class Record {
             byte[] header = new byte[HEADER_SIZE];
             ByteBuffer headerBuffer = ByteBuffer.wrap(header);
             headerBuffer.put(VERSION_OFFSET, (byte)version);
-            headerBuffer.put(KEY_SIZE_OFFSET, keySize);
+            headerBuffer.putInt(KEY_SIZE_OFFSET, keySize);
             headerBuffer.putInt(VALUE_SIZE_OFFSET, valueSize);
             headerBuffer.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
 
@@ -189,7 +189,7 @@ public class Record {
                    && header.recordSize > 0 && header.sequenceNumber > 0;
         }
 
-        byte getKeySize() {
+        int getKeySize() {
             return keySize;
         }
 

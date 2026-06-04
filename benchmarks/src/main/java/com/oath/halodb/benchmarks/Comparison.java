@@ -42,11 +42,17 @@ public class Comparison {
     static final class Config {
         long records;
         int recordSize;
+        int keySize = 8;
         long reads;
         int readThreads;
         boolean rocksCompress;
         File dir;
         List<String> engines = new ArrayList<>(List.of("halodb", "rocksdb"));
+    }
+
+    // Prefix scan needs HaloDB's ordered (ART) index, which requires fixed keys <= 127 bytes.
+    static boolean prefixScanSupported(Config cfg) {
+        return cfg.keySize <= 127;
     }
 
     static final class Result {
@@ -69,10 +75,11 @@ public class Comparison {
 
         double dataGb = cfg.records * (double) cfg.recordSize / (1024 * 1024 * 1024);
         System.out.printf(
-            "Workload: records=%,d  recordSize=%dB  reads=%,d  readThreads=%d  (~%.2f GB of values)%n",
-            cfg.records, cfg.recordSize, cfg.reads, cfg.readThreads, dataGb);
-        System.out.printf("Engines: %s   dir=%s   rocksCompress=%s%n%n",
-            cfg.engines, cfg.dir, cfg.rocksCompress);
+            "Workload: records=%,d  recordSize=%dB  keySize=%dB  reads=%,d  readThreads=%d  (~%.2f GB of values)%n",
+            cfg.records, cfg.recordSize, cfg.keySize, cfg.reads, cfg.readThreads, dataGb);
+        System.out.printf("Engines: %s   dir=%s   rocksCompress=%s%s%n%n",
+            cfg.engines, cfg.dir, cfg.rocksCompress,
+            prefixScanSupported(cfg) ? "" : "   (prefix scan skipped: keySize > 127)");
 
         Map<String, Result> results = new LinkedHashMap<>();
         for (String engine : cfg.engines) {
@@ -81,7 +88,7 @@ public class Comparison {
             dir.mkdirs();
             StorageEngine db = engine.equals("rocksdb")
                 ? new RocksDBStorageEngine(dir, cfg.rocksCompress)
-                : new HaloDBStorageEngine(dir, cfg.records);
+                : new HaloDBStorageEngine(dir, cfg.records, cfg.keySize);
             System.out.printf("==== %s ====%n", engine);
             db.open();
             try {
@@ -100,9 +107,11 @@ public class Comparison {
         r.engine = engine;
 
         // ---- FILL: sequential keys, reused value buffer (unique in first 8 bytes) ----
+        // Keys are cfg.keySize bytes; the id is written into the first 8 bytes (the rest are zero),
+        // so keys are deterministic and unique, and a key of any size can be regenerated from its id.
         byte[] value = new byte[cfg.recordSize];
         new Random(SEED).nextBytes(value);
-        byte[] key = new byte[8];
+        byte[] key = new byte[cfg.keySize];
         long fillStart = System.nanoTime();
         for (long i = 0; i < cfg.records; i++) {
             writeLong(key, i);
@@ -119,7 +128,7 @@ public class Comparison {
         // ---- WARMUP reads (untimed): warms page cache, JIT, and lets writes settle ----
         long warmup = Math.min(cfg.records, Math.max(1, cfg.reads / 10));
         Random wr = new Random(SEED);
-        byte[] wk = new byte[8];
+        byte[] wk = new byte[cfg.keySize];
         for (long i = 0; i < warmup; i++) {
             writeLong(wk, Math.floorMod(wr.nextLong(), cfg.records));
             db.get(wk);
@@ -130,7 +139,7 @@ public class Comparison {
         ReadWorker[] workers = new ReadWorker[cfg.readThreads];
         long readStart = System.nanoTime();
         for (int t = 0; t < cfg.readThreads; t++) {
-            workers[t] = new ReadWorker(db, perThread, cfg.records, SEED + t);
+            workers[t] = new ReadWorker(db, perThread, cfg.records, cfg.keySize, SEED + t);
             workers[t].start();
         }
         long misses = 0;
@@ -148,9 +157,14 @@ public class Comparison {
             r.readOpsPerSec, r.readSeconds, misses);
 
         // ---- PREFIX SCAN: scan keys sharing the first 7 bytes (~256-key blocks), random blocks ----
+        // Only when the ordered index is available (keySize <= 127); skipped for large keys.
+        if (!prefixScanSupported(cfg)) {
+            System.out.println("  prefixScan: skipped (keySize > 127, ordered index unavailable)");
+            return r;
+        }
         int scans = (int) Math.min(2000, Math.max(1, cfg.records / 256));
         Random pr = new Random(SEED + 999);
-        byte[] full = new byte[8];
+        byte[] full = new byte[cfg.keySize];
         long matched = 0;
         long pStart = System.nanoTime();
         for (int i = 0; i < scans; i++) {
@@ -172,21 +186,23 @@ public class Comparison {
         final StorageEngine db;
         final long count;
         final long records;
+        final int keySize;
         final long seed;
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
         long misses = 0;
 
-        ReadWorker(StorageEngine db, long count, long records, long seed) {
+        ReadWorker(StorageEngine db, long count, long records, int keySize, long seed) {
             this.db = db;
             this.count = count;
             this.records = records;
+            this.keySize = keySize;
             this.seed = seed;
         }
 
         @Override
         public void run() {
             Random rand = new Random(seed);
-            byte[] key = new byte[8];
+            byte[] key = new byte[keySize];
             for (long i = 0; i < count; i++) {
                 writeLong(key, Math.floorMod(rand.nextLong(), records));
                 long s = System.nanoTime();
@@ -281,6 +297,7 @@ public class Comparison {
             switch (k) {
                 case "records": cfg.records = Long.parseLong(v); break;
                 case "record-size": cfg.recordSize = Integer.parseInt(v); break;
+                case "key-size": cfg.keySize = Integer.parseInt(v); break;
                 case "reads": cfg.reads = Long.parseLong(v); break;
                 case "read-threads": cfg.readThreads = Integer.parseInt(v); break;
                 case "dir": cfg.dir = new File(v); break;
@@ -292,6 +309,7 @@ public class Comparison {
             }
         }
         if (cfg.recordSize < 8) throw new IllegalArgumentException("record-size must be >= 8");
+        if (cfg.keySize < 8) throw new IllegalArgumentException("key-size must be >= 8");
         return cfg;
     }
 

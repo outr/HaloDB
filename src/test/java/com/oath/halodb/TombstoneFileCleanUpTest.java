@@ -209,7 +209,9 @@ public class TombstoneFileCleanUpTest extends TestBase {
         int noOfFiles = 8;
         int noOfRecords = noOfRecordsPerFile * noOfFiles;
 
-        int keyLength = 18;
+        // keyLength chosen so record (21 + 15 + 24 = 60) and tombstone entry (17 + 15 = 32) sizes
+        // match the file-packing arithmetic this test relies on after the key-size field widened.
+        int keyLength = 15;
         int valueLength = 24;
 
         List<Record> records = new ArrayList<>();
@@ -228,7 +230,7 @@ public class TombstoneFileCleanUpTest extends TestBase {
         db.close();
         db = getTestDBWithoutDeletingFiles(directory, options);
 
-        // Since keyLength was 18, plus header length 14, tombstone entry is 32 bytes.
+        // Since keyLength was 15, plus header length 17, tombstone entry is 32 bytes.
         // Since file size is 512 there would be two tombstone files both of which should be copied.
         File[] tombstoneFiles = FileUtils.listTombstoneFiles(new File(directory));
         Set<String> tombstones = new HashSet<>();
@@ -260,14 +262,14 @@ public class TombstoneFileCleanUpTest extends TestBase {
         options.setMaxTombstoneFileSize(2 * 1024);
         HaloDB db = getTestDB(directory, options);
 
-        // Record size: header 18 + key 18 + value 28 = 64 bytes
-        // Tombstone entry size: header 14 + key 18 = 32 bytes
+        // Record size: header 21 + key 15 + value 28 = 64 bytes
+        // Tombstone entry size: header 17 + key 15 = 32 bytes
         // Each data file will store 16 * 1024 / 64 = 256 records
         // Each tombstone file will store 2 * 1024 / 32 = 64 entries
         // Total data files 2048 / 256 = 8
         // Total tombstone original file count (1024 / 2 + 1024 / 4) / 64 = 12
         // After cleanup, tombstone file count 1024 / 4 / 64 = 4
-        int keyLength = 18;
+        int keyLength = 15;
         int valueLength = 28;
         int noOfRecords = 2048;
         List<Record> records = new ArrayList<>();
