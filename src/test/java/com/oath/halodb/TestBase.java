@@ -61,14 +61,22 @@ public class TestBase {
     @AfterMethod(alwaysRun = true)
     public void closeDB() throws HaloDBException, IOException {
         if (db != null) {
-            db.close();
-            db = null;
-            File dir = new File(directory);
-            if (dbDirectory != null) {
-                dbDirectory.close();
-                dbDirectory = null;
+            try {
+                db.close();
+            } finally {
+                // Always tear down, even if close() failed (or an injected fault threw), so the
+                // next test starts from a clean slate and cannot inherit a half-closed db.
+                db = null;
+                if (dbDirectory != null) {
+                    try {
+                        dbDirectory.close();
+                    } catch (IOException ignored) {
+                        // best effort; the directory is deleted next anyway.
+                    }
+                    dbDirectory = null;
+                }
+                TestUtils.deleteDirectory(new File(directory));
             }
-            TestUtils.deleteDirectory(dir);
         }
     }
 }

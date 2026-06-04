@@ -16,6 +16,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Paths;
 
+import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 
@@ -486,6 +487,43 @@ public class HaloDBTest extends TestBase {
         HaloDB anotherDB = getTestDBWithoutDeletingFiles(directory, new HaloDBOptions());
         anotherDB.put(Longs.toByteArray(1), Longs.toByteArray(1));
         Assert.assertEquals(anotherDB.size(), 1);
+    }
+
+    @Test
+    public void testLockReleasedWhenCloseFails() throws Throwable {
+        // If close() fails partway through (here: an injected IOException while persisting metadata),
+        // the inter-process file lock must still be released so the same directory can be reopened.
+        // This guards against the lock leak that caused intermittent "Another process already holds
+        // a lock" test-isolation failures.
+        final boolean[] failClose = {false};
+        new MockUp<DBMetaData>() {
+            @Mock
+            void storeToFile(Invocation inv) throws IOException {
+                if (failClose[0]) {
+                    throw new IOException("injected failure while closing");
+                }
+                inv.proceed(); // real behaviour during open()
+            }
+        };
+
+        String directory = TestUtils.getTestDirectory("HaloDBTest", "testLockReleasedWhenCloseFails");
+        HaloDB db = getTestDB(directory, new HaloDBOptions());
+        db.put(Longs.toByteArray(1), Longs.toByteArray(1));
+
+        failClose[0] = true;
+        try {
+            db.close();
+            Assert.fail("close() was expected to fail");
+        } catch (HaloDBException expected) {
+            // close failed as injected — the lock must nonetheless have been released.
+        }
+
+        // Reopening the same directory must succeed (it would throw "Another process already holds a
+        // lock" if the lock had leaked).
+        failClose[0] = false;
+        HaloDB reopened = getTestDBWithoutDeletingFiles(directory, new HaloDBOptions());
+        reopened.put(Longs.toByteArray(2), Longs.toByteArray(2));
+        Assert.assertEquals(reopened.size(), 2);
     }
 
     @Test(expectedExceptions = HaloDBException.class)
