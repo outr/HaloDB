@@ -46,11 +46,13 @@ def fmt(v):
     return f"{v:g}" if v < 100 else f"{int(round(v)):,}"
 
 
-def chart(title, categories, data, unit, ticks=5):
+def chart(title, categories, data, unit, ticks=5, log=False):
     """Horizontal grouped bar chart.
 
     categories: ["1KB", "16KB"]; data: {"HaloDB": [..], "RocksDB": [..]} aligned to categories.
+    log=True uses a log10 x-axis (for data spanning several orders of magnitude).
     """
+    import math
     W = 940
     pad_l, pad_r, pad_top, pad_bottom = 70, 30, 96, 56
     bar_h, intra_gap, group_gap = 30, 8, 30
@@ -61,8 +63,16 @@ def chart(title, categories, data, unit, ticks=5):
     plot_x0, plot_x1 = pad_l, W - pad_r
     plot_w = plot_x1 - plot_x0
 
-    vmax = nice_ceiling(max(max(v) for v in data.values()))
-    x = lambda v: plot_x0 + plot_w * (v / vmax)
+    if log:
+        vmin = 10 ** math.floor(math.log10(min(min(v) for v in data.values())))
+        vmax = 10 ** math.ceil(math.log10(max(max(v) for v in data.values())))
+        lo, hi = math.log10(vmin), math.log10(vmax)
+        x = lambda v: plot_x0 + plot_w * (math.log10(v) - lo) / (hi - lo)
+        gridvals = [10 ** p for p in range(int(lo), int(hi) + 1)]
+    else:
+        vmax = nice_ceiling(max(max(v) for v in data.values()))
+        x = lambda v: plot_x0 + plot_w * (v / vmax)
+        gridvals = [vmax * i / ticks for i in range(ticks + 1)]
 
     s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
          f'viewBox="0 0 {W} {H}" {FONT}>']
@@ -83,8 +93,7 @@ def chart(title, categories, data, unit, ticks=5):
         cursor += 14 + 8 + len(name) * 8.6 + 22
 
     # Vertical gridlines + x tick labels
-    for i in range(ticks + 1):
-        gv = vmax * i / ticks
+    for gv in gridvals:
         gx = x(gv)
         s.append(f'<line x1="{gx:.1f}" y1="{pad_top}" x2="{gx:.1f}" y2="{pad_top+plot_h}" '
                  f'stroke="{GRID}" stroke-width="1"/>')
@@ -136,9 +145,10 @@ CHARTS = {
         ["1KB", "16KB"],
         {"HaloDB": [326630, 71183], "RocksDB": [1540575, 222664]}, ""),
     "prefix-throughput.svg": chart(
-        "Prefix-scan throughput (keys/sec) — higher is better",
-        ["1KB", "16KB"],
-        {"HaloDB": [1051824, 265794], "RocksDB": [1236131, 209773]}, ""),
+        "Prefix-scan throughput (keys/sec, log scale) — higher is better",
+        ["1KB", "16KB", "256KB", "1MB"],
+        {"HaloDB": [1051824, 265794, 32905, 9639],
+         "RocksDB": [1236131, 209773, 21629, 5068]}, "", log=True),
 }
 
 if __name__ == "__main__":

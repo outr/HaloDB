@@ -12,9 +12,12 @@ writes, and prefix/range scans**.
 
 ## Setup
 
-- 8-byte keys; values of **1KB** (small) and **16KB** (large).
+- 8-byte keys; values of **1KB** (small) and **16KB** (large) for the write/read comparison.
 - 2,000,000 records (1KB) / 300,000 records (16KB) — fits in page cache.
 - Reads are random (fixed seed) across all keys.
+- Prefix scans are swept across **1KB, 16KB, 256KB, and 1MB** values (record count chosen to keep
+  each dataset page-cache resident: 30,000 records at 256KB, 10,000 at 1MB) to show how the engines
+  diverge as records grow.
 - HaloDB runs with the ordered index enabled (`HaloDBOptions.setUseOrderedIndex(true)`) so prefix
   scans are available; RocksDB scans via a `RocksIterator` over its sorted keyspace. Prefix scans
   read ~256-key blocks, touching each matched value.
@@ -36,7 +39,7 @@ writes, and prefix/range scans**.
 
 ![Write throughput (ops/sec) — higher is better](images/write-throughput.svg)
 
-![Prefix-scan throughput (keys/sec) — higher is better](images/prefix-throughput.svg)
+![Prefix-scan throughput (keys/sec, log scale) — higher is better](images/prefix-throughput.svg)
 
 > Charts are generated from the data above by [`images/generate_charts.py`](images/generate_charts.py)
 > (no dependencies) — re-run it after a fresh benchmark to refresh them.
@@ -54,7 +57,7 @@ fast. HaloDB appends each record to its log and updates the index; durable and s
 write throughput. This is the trade-off HaloDB makes in favor of read latency and crash-recovery
 simplicity.
 
-### Prefix/range scans — roughly on par; HaloDB faster for large records
+### Prefix/range scans — HaloDB's lead grows with record size
 
 Prefix scanning is available via HaloDB's optional ordered index — an off-heap
 [adaptive radix tree](https://db.in.tum.de/~leis/papers/ART.pdf) of the key set maintained alongside
@@ -62,12 +65,21 @@ the hash index. A scan seeks directly to the prefix's subtree (O(prefix length +
 each matched record through the normal point-read path; RocksDB iterates its sorted keyspace,
 reading values sequentially.
 
-The margin depends on record size: for **small (1KB)** records HaloDB is ~0.85× RocksDB (the
-per-record read is overhead-bound), and for **large (16KB)** records HaloDB is **~1.3× faster** (the
-read becomes transfer-bound, so HaloDB's one-seek-per-record is near-optimal). HaloDB's prefix
-scanning is therefore competitive across the board and strongest for large records — the workload it
-targets. The ordered index does not change point-read latency (the hash index is untouched); its
-cost is per-write maintenance and roughly 2× index memory, and it requires fixed-length keys.
+The margin scales with record size — as the per-record read shifts from overhead-bound to
+transfer-bound, HaloDB's one-seek-per-record approaches optimal while RocksDB's sequential iteration
+loses its edge:
+
+| value size | HaloDB keys/sec | RocksDB keys/sec | HaloDB vs RocksDB |
+| --- | ---: | ---: | ---: |
+| 1KB   | 1,051,824 | 1,236,131 | 0.85× |
+| 16KB  | 265,794   | 209,773   | 1.27× |
+| 256KB | 32,905    | 21,629    | 1.52× |
+| 1MB   | 9,639     | 5,068     | **1.90×** |
+
+So HaloDB starts slightly behind on tiny records and pulls steadily ahead as records grow — nearly
+**2× faster at 1MB**, the large-record workload it targets. The ordered index does not change
+point-read latency (the hash index is untouched); its cost is per-write maintenance and roughly 2×
+index memory, and it requires fixed-length keys.
 
 ## Why HaloDB makes these trade-offs
 
