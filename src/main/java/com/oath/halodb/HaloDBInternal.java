@@ -169,48 +169,56 @@ class HaloDBInternal {
             isClosing = true;
 
             try {
-                if(!compactionManager.stopCompactionThread(true))
-                    setIOErrorFlag();
-            } catch (IOException e) {
-                logger.error("Error while stopping compaction thread. Setting IOError flag", e);
-                setIOErrorFlag();
-            }
-
-            if (isTombstoneFilesMerging) {
                 try {
-                    tombstoneMergeThread.join();
-                } catch (InterruptedException e) {
-                    logger.error("Interrupted when waiting the tombstone files merging");
+                    if(!compactionManager.stopCompactionThread(true))
+                        setIOErrorFlag();
+                } catch (IOException e) {
+                    logger.error("Error while stopping compaction thread. Setting IOError flag", e);
                     setIOErrorFlag();
                 }
-            }
 
-            if (options.isCleanUpInMemoryIndexOnClose())
-                inMemoryIndex.close();
+                if (isTombstoneFilesMerging) {
+                    try {
+                        tombstoneMergeThread.join();
+                    } catch (InterruptedException e) {
+                        logger.error("Interrupted when waiting the tombstone files merging");
+                        setIOErrorFlag();
+                    }
+                }
 
-            if (currentWriteFile != null) {
-                currentWriteFile.flushToDisk();
-                currentWriteFile.getIndexFile().flushToDisk();
-                currentWriteFile.close();
-            }
-            if (currentTombstoneFile != null) {
-                currentTombstoneFile.flushToDisk();
-                currentTombstoneFile.close();
-            }
+                if (options.isCleanUpInMemoryIndexOnClose())
+                    inMemoryIndex.close();
 
-            for (HaloDBFile file : readFileMap.values()) {
-                file.close();
-            }
+                if (currentWriteFile != null) {
+                    currentWriteFile.flushToDisk();
+                    currentWriteFile.getIndexFile().flushToDisk();
+                    currentWriteFile.close();
+                }
+                if (currentTombstoneFile != null) {
+                    currentTombstoneFile.flushToDisk();
+                    currentTombstoneFile.close();
+                }
 
-            DBMetaData metaData = new DBMetaData(dbDirectory);
-            metaData.loadFromFileIfExists();
-            metaData.setOpen(false);
-            metaData.storeToFile();
+                for (HaloDBFile file : readFileMap.values()) {
+                    file.close();
+                }
 
-            dbDirectory.close();
+                DBMetaData metaData = new DBMetaData(dbDirectory);
+                metaData.loadFromFileIfExists();
+                metaData.setOpen(false);
+                metaData.storeToFile();
 
-            if (dbLock != null) {
-                dbLock.close();
+                dbDirectory.close();
+            } finally {
+                // Always release the inter-process file lock, even if flushing or closing the files
+                // above threw (e.g. a channel closed by an interrupted IO thread, or an injected
+                // fault). A FileLock is JVM-wide per file, so a lingering lock would make the next
+                // open of this directory fail with "Another process already holds a lock" — the
+                // root of an intermittent test-isolation failure.
+                if (dbLock != null) {
+                    dbLock.close();
+                    dbLock = null;
+                }
             }
         } finally {
             writeLock.unlock();
