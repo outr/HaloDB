@@ -14,28 +14,28 @@ import java.util.zip.CRC32;
 class IndexFileEntry {
 
     /**
-     * checksum         - 4 bytes. 
+     * checksum         - 4 bytes.
      * version          - 1 byte.
-     * Key size         - 1 bytes.
+     * Key size         - 4 bytes.
      * record size      - 4 bytes.
      * record offset    - 4 bytes.
      * sequence number  - 8 bytes
      */
-    final static int INDEX_FILE_HEADER_SIZE = 22;
+    final static int INDEX_FILE_HEADER_SIZE = 25;
     final static int CHECKSUM_SIZE = 4;
 
     static final int CHECKSUM_OFFSET = 0;
     static final int VERSION_OFFSET = 4;
     static final int KEY_SIZE_OFFSET = 5;
-    static final int RECORD_SIZE_OFFSET = 6;
-    static final int RECORD_OFFSET = 10;
-    static final int SEQUENCE_NUMBER_OFFSET = 14;
+    static final int RECORD_SIZE_OFFSET = 9;
+    static final int RECORD_OFFSET = 13;
+    static final int SEQUENCE_NUMBER_OFFSET = 17;
 
 
     private final byte[] key;
     private final int recordSize;
     private final int recordOffset;
-    private final byte keySize;
+    private final int keySize;
     private final int version;
     private final long sequenceNumber;
     private final long checkSum;
@@ -48,7 +48,7 @@ class IndexFileEntry {
         this.version = version;
         this.checkSum = checkSum;
 
-        this.keySize = (byte)key.length;
+        this.keySize = key.length;
     }
 
     ByteBuffer[] serialize() {
@@ -56,7 +56,7 @@ class IndexFileEntry {
         ByteBuffer h = ByteBuffer.wrap(header);
 
         h.put(VERSION_OFFSET, (byte)version);
-        h.put(KEY_SIZE_OFFSET, keySize);
+        h.putInt(KEY_SIZE_OFFSET, keySize);
         h.putInt(RECORD_SIZE_OFFSET, recordSize);
         h.putInt(RECORD_OFFSET, recordOffset);
         h.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
@@ -69,7 +69,7 @@ class IndexFileEntry {
     static IndexFileEntry deserialize(ByteBuffer buffer) {
         long crc32 = Utils.toUnsignedIntFromInt(buffer.getInt());
         int version = Utils.toUnsignedByte(buffer.get());
-        byte keySize = buffer.get();
+        int keySize = buffer.getInt();
         int recordSize = buffer.getInt();
         int offset = buffer.getInt();
         long sequenceNumber = buffer.getLong();
@@ -87,7 +87,7 @@ class IndexFileEntry {
 
         long crc32 = Utils.toUnsignedIntFromInt(buffer.getInt());
         int version = Utils.toUnsignedByte(buffer.get());
-        byte keySize = buffer.get();
+        int keySize = buffer.getInt();
         int recordSize = buffer.getInt();
         int offset = buffer.getInt();
         long sequenceNumber = buffer.getLong();
@@ -119,7 +119,7 @@ class IndexFileEntry {
     long computeCheckSum() {
         ByteBuffer header = ByteBuffer.allocate(INDEX_FILE_HEADER_SIZE);
         header.put(VERSION_OFFSET, (byte)version);
-        header.put(KEY_SIZE_OFFSET, keySize);
+        header.putInt(KEY_SIZE_OFFSET, keySize);
         header.putInt(RECORD_SIZE_OFFSET, recordSize);
         header.putInt(RECORD_OFFSET, recordOffset);
         header.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);

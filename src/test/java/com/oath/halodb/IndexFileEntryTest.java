@@ -20,13 +20,13 @@ public class IndexFileEntryTest {
         byte[] key = TestUtils.generateRandomByteArray(8);
         int recordSize = 1024;
         int recordOffset = 10240;
-        byte keySize = (byte) key.length;
+        int keySize = key.length;
         long sequenceNumber = 100;
         int version = 200;
 
         ByteBuffer header = ByteBuffer.allocate(INDEX_FILE_HEADER_SIZE);
         header.put(VERSION_OFFSET, (byte)version);
-        header.put(KEY_SIZE_OFFSET, keySize);
+        header.putInt(KEY_SIZE_OFFSET, keySize);
         header.putInt(RECORD_SIZE_OFFSET, recordSize);
         header.putInt(RECORD_OFFSET, recordOffset);
         header.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
@@ -49,7 +49,7 @@ public class IndexFileEntryTest {
         byte[] key = TestUtils.generateRandomByteArray(8);
         int recordSize = 1024;
         int recordOffset = 10240;
-        byte keySize = (byte) key.length;
+        int keySize = key.length;
         long sequenceNumber = 100;
         int version = 10;
         long checksum = 42323;
@@ -57,7 +57,7 @@ public class IndexFileEntryTest {
         ByteBuffer header = ByteBuffer.allocate(IndexFileEntry.INDEX_FILE_HEADER_SIZE + keySize);
         header.putInt((int)checksum);
         header.put((byte)version);
-        header.put(keySize);
+        header.putInt(keySize);
         header.putInt(recordSize);
         header.putInt(recordOffset);
         header.putLong(sequenceNumber);
