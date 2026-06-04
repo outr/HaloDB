@@ -16,7 +16,7 @@ crossPaths := false
 autoScalaLibrary := false
 
 ThisBuild / organization := org
-ThisBuild / version := "0.6.0"
+ThisBuild / version := "0.7.0-SNAPSHOT"
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 // HaloDB uses the Foreign Function & Memory API (java.lang.foreign), finalized in JDK 22.
