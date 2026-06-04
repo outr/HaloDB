@@ -14,14 +14,14 @@ Function & Memory API) and extended with **arbitrary-length keys** and optional 
 ## Install
 
 ```scala
-libraryDependencies += "com.outr" % "halodb-revive" % "0.7.0"
+libraryDependencies += "com.outr" % "halodb-revive" % "@VERSION@"
 ```
 
 ```xml
 <dependency>
   <groupId>com.outr</groupId>
   <artifactId>halodb-revive</artifactId>
-  <version>0.7.0</version>
+  <version>@VERSION@</version>
 </dependency>
 ```
 
@@ -33,7 +33,7 @@ restricted-method warning.
 Keys and values are `byte[]`. Examples are Scala (compile-checked via
 [mdoc](https://scalameta.org/mdoc/)); the API is identical from any JVM language.
 
-```scala
+```scala mdoc:compile-only
 import com.oath.halodb.{HaloDB, HaloDBOptions, Record}
 import java.io.File
 
@@ -65,7 +65,7 @@ Enabling the ordered index keeps an off-heap
 [adaptive radix tree](https://db.in.tum.de/~leis/papers/ART.pdf) alongside the hash index, adding
 ascending prefix scans. It needs **fixed-length keys** and leaves point-read latency unchanged.
 
-```scala
+```scala mdoc:compile-only
 import com.oath.halodb.{HaloDB, HaloDBOptions}
 import java.io.File
 

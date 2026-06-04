@@ -110,3 +110,17 @@ lazy val benchmarks = (project in file("benchmarks"))
       "org.slf4j" % "slf4j-simple" % "1.7.12"
     )
   )
+
+// Documentation: the root README.md is generated from docs/README.md by mdoc, so the version in the
+// install snippet stays in sync (@VERSION@) and the code examples are compiled against the published
+// API. Not aggregated, so `sbt test` stays root-only. Regenerate with: sbt docs/mdoc
+lazy val docs = (project in file("project-docs"))
+  .dependsOn(LocalRootProject)
+  .enablePlugins(MdocPlugin)
+  .settings(
+    scalaVersion := "3.8.3",
+    publish / skip := true,
+    mdocVariables := Map("VERSION" -> version.value),
+    mdocIn := (LocalRootProject / baseDirectory).value / "docs" / "README.md",
+    mdocOut := (LocalRootProject / baseDirectory).value / "README.md"
+  )
