@@ -218,9 +218,6 @@ class HaloDBInternal {
     }
 
     boolean put(byte[] key, byte[] value) throws IOException, HaloDBException {
-        if (key.length > Byte.MAX_VALUE) {
-            throw new HaloDBException("key length cannot exceed " + Byte.MAX_VALUE);
-        }
         if (options.isUseOrderedIndex() && key.length != options.getFixedKeySize()) {
             throw new HaloDBException("ordered index requires keys of exactly fixedKeySize (" + options.getFixedKeySize() + ") bytes");
         }
