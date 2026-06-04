@@ -18,29 +18,29 @@
 <line x1="910.0" y1="96" x2="910.0" y2="556" stroke="#e3e6ea" stroke-width="1"/>
 <text x="910.0" y="578" font-size="12" fill="#5f6368" text-anchor="middle">10,000,000</text>
 <line x1="70" y1="96" x2="70" y2="556" stroke="#bdc1c6" stroke-width="1.5"/>
-<rect x="70" y="96" width="675.7" height="30" fill="#4285F4"/>
-<text x="735.7" y="116.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">1,051,824</text>
-<rect x="70" y="134" width="687.5" height="30" fill="#E8B33A"/>
-<text x="747.5" y="154.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">1,236,131</text>
+<rect x="70" y="96" width="677.6" height="30" fill="#4285F4"/>
+<text x="737.6" y="116.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">1,079,254</text>
+<rect x="70" y="134" width="686.7" height="30" fill="#E8B33A"/>
+<text x="746.7" y="154.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">1,223,735</text>
 <text x="58" y="135.0" font-size="14" fill="#5f6368" text-anchor="end">1KB</text>
-<rect x="70" y="194" width="575.3" height="30" fill="#4285F4"/>
-<text x="635.3" y="214.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">265,794</text>
-<rect x="70" y="232" width="558.1" height="30" fill="#E8B33A"/>
-<text x="618.1" y="252.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">209,773</text>
+<rect x="70" y="194" width="580.0" height="30" fill="#4285F4"/>
+<text x="640.0" y="214.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">283,423</text>
+<rect x="70" y="232" width="555.2" height="30" fill="#E8B33A"/>
+<text x="615.2" y="252.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">201,671</text>
 <text x="58" y="233.0" font-size="14" fill="#5f6368" text-anchor="end">16KB</text>
-<rect x="70" y="292" width="422.9" height="30" fill="#4285F4"/>
-<text x="482.9" y="312.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">32,905</text>
-<rect x="70" y="330" width="392.3" height="30" fill="#E8B33A"/>
-<text x="452.3" y="350.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">21,629</text>
+<rect x="70" y="292" width="405.9" height="30" fill="#4285F4"/>
+<text x="465.9" y="312.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">26,071</text>
+<rect x="70" y="330" width="377.7" height="30" fill="#E8B33A"/>
+<text x="437.7" y="350.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">17,702</text>
 <text x="58" y="331.0" font-size="14" fill="#5f6368" text-anchor="end">256KB</text>
-<rect x="70" y="390" width="333.3" height="30" fill="#4285F4"/>
-<text x="393.3" y="410.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">9,639</text>
-<rect x="70" y="428" width="286.4" height="30" fill="#E8B33A"/>
-<text x="346.4" y="448.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">5,068</text>
+<rect x="70" y="390" width="325.1" height="30" fill="#4285F4"/>
+<text x="385.1" y="410.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">8,610</text>
+<rect x="70" y="428" width="271.4" height="30" fill="#E8B33A"/>
+<text x="331.4" y="448.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">4,124</text>
 <text x="58" y="429.0" font-size="14" fill="#5f6368" text-anchor="end">1MB</text>
-<rect x="70" y="488" width="155.9" height="30" fill="#4285F4"/>
-<text x="215.9" y="508.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">847</text>
-<rect x="70" y="526" width="104.9" height="30" fill="#E8B33A"/>
-<text x="164.9" y="546.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">421</text>
+<rect x="70" y="488" width="110.4" height="30" fill="#4285F4"/>
+<text x="170.4" y="508.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">454</text>
+<rect x="70" y="526" width="92.4" height="30" fill="#E8B33A"/>
+<text x="152.4" y="546.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">355</text>
 <text x="58" y="527.0" font-size="14" fill="#5f6368" text-anchor="end">10MB</text>
 </svg>

@@ -135,31 +135,31 @@ CHARTS = {
     "read-throughput.svg": chart(
         "Random read throughput (ops/sec) — higher is better",
         ["1KB", "16KB"],
-        {"HaloDB": [2815617, 635900], "RocksDB": [1676199, 493585]}, ""),
+        {"HaloDB": [2640415, 677922], "RocksDB": [1705611, 554765]}, ""),
     "read-latency.svg": chart(
         "Read latency p50 (microseconds) — lower is better",
         ["1KB"],
-        {"HaloDB": [2.1], "RocksDB": [4.7]}, "µs"),
+        {"HaloDB": [2.4], "RocksDB": [4.1]}, "µs"),
     "write-throughput.svg": chart(
         "Write throughput (ops/sec) — higher is better",
         ["1KB", "16KB"],
-        {"HaloDB": [326630, 71183], "RocksDB": [1540575, 222664]}, ""),
+        {"HaloDB": [326973, 72068], "RocksDB": [1435131, 260597]}, ""),
     "prefix-throughput.svg": chart(
         "Prefix-scan throughput (keys/sec, log scale) — higher is better",
         ["1KB", "16KB", "256KB", "1MB", "10MB"],
-        {"HaloDB": [1051824, 265794, 32905, 9639, 847],
-         "RocksDB": [1236131, 209773, 21629, 5068, 421]}, "", log=True),
+        {"HaloDB": [1079254, 283423, 26071, 8610, 454],
+         "RocksDB": [1223735, 201671, 17702, 4124, 355]}, "", log=True),
     # Key-size scaling (256-byte values, 500k records). Point reads/writes only.
     "read-by-keysize.svg": chart(
         "Random read throughput by key size (ops/sec) — higher is better",
         ["8 B", "64 B", "256 B", "1 KB", "4 KB"],
-        {"HaloDB": [2735662, 2756031, 2167669, 2053670, 1874241],
-         "RocksDB": [2078608, 2191073, 1524574, 2028665, 1581044]}, ""),
+        {"HaloDB": [3060502, 3067065, 3225746, 2057032, 1714319],
+         "RocksDB": [1927874, 2158499, 1679731, 1705309, 1340569]}, ""),
     "write-by-keysize.svg": chart(
         "Write throughput by key size (ops/sec) — higher is better",
         ["8 B", "64 B", "256 B", "1 KB", "4 KB"],
-        {"HaloDB": [400193, 365036, 323389, 196893, 77090],
-         "RocksDB": [1762290, 1703833, 1415057, 1071512, 689119]}, ""),
+        {"HaloDB": [375188, 345649, 309721, 187242, 72650],
+         "RocksDB": [1626135, 1677565, 1500769, 1089087, 616469]}, ""),
 }
 
 if __name__ == "__main__":

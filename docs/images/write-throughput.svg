@@ -8,24 +8,24 @@
 <line x1="70.0" y1="96" x2="70.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
 <text x="70.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">0</text>
 <line x1="238.0" y1="96" x2="238.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
-<text x="238.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">400,000</text>
+<text x="238.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">300,000</text>
 <line x1="406.0" y1="96" x2="406.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
-<text x="406.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">800,000</text>
+<text x="406.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">600,000</text>
 <line x1="574.0" y1="96" x2="574.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
-<text x="574.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">1,200,000</text>
+<text x="574.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">900,000</text>
 <line x1="742.0" y1="96" x2="742.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
-<text x="742.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">1,600,000</text>
+<text x="742.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">1,200,000</text>
 <line x1="910.0" y1="96" x2="910.0" y2="262" stroke="#e3e6ea" stroke-width="1"/>
-<text x="910.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">2,000,000</text>
+<text x="910.0" y="284" font-size="12" fill="#5f6368" text-anchor="middle">1,500,000</text>
 <line x1="70" y1="96" x2="70" y2="262" stroke="#bdc1c6" stroke-width="1.5"/>
-<rect x="70" y="96" width="137.2" height="30" fill="#4285F4"/>
-<text x="197.2" y="116.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">326,630</text>
-<rect x="70" y="134" width="647.0" height="30" fill="#E8B33A"/>
-<text x="707.0" y="154.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">1,540,575</text>
+<rect x="70" y="96" width="183.1" height="30" fill="#4285F4"/>
+<text x="243.1" y="116.0" font-size="14" font-weight="600" fill="#ffffff" text-anchor="end">326,973</text>
+<rect x="70" y="134" width="803.7" height="30" fill="#E8B33A"/>
+<text x="863.7" y="154.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">1,435,131</text>
 <text x="58" y="135.0" font-size="14" fill="#5f6368" text-anchor="end">1KB</text>
-<rect x="70" y="194" width="29.9" height="30" fill="#4285F4"/>
-<text x="107.9" y="214.0" font-size="14" font-weight="600" fill="#202124" text-anchor="start">71,183</text>
-<rect x="70" y="232" width="93.5" height="30" fill="#E8B33A"/>
-<text x="153.5" y="252.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">222,664</text>
+<rect x="70" y="194" width="40.4" height="30" fill="#4285F4"/>
+<text x="118.4" y="214.0" font-size="14" font-weight="600" fill="#202124" text-anchor="start">72,068</text>
+<rect x="70" y="232" width="145.9" height="30" fill="#E8B33A"/>
+<text x="205.9" y="252.0" font-size="14" font-weight="600" fill="#202124" text-anchor="end">260,597</text>
 <text x="58" y="233.0" font-size="14" fill="#5f6368" text-anchor="end">16KB</text>
 </svg>

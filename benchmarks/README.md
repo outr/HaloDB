@@ -43,14 +43,14 @@ Sample results (one workstation, in page cache — directional only). See
 ![Prefix-scan throughput (keys/sec, log scale) — higher is better](../docs/images/prefix-throughput.svg)
 
 Reading the three dimensions:
-* **Point reads** — HaloDB wins (read-amplification-1), ~1.3–2x.
-* **Writes** — RocksDB wins (LSM), ~3–4.6x.
-* **Prefix/range scans** — HaloDB's lead grows with record size. It seeks to the prefix's subtree in
-  the ordered index and reads each matched record via its point-read path; RocksDB iterates its
-  sorted keyspace. HaloDB is ~0.85x RocksDB at **1KB** but pulls ahead as the per-record read becomes
-  transfer-bound: **1.27x** at 16KB, **1.52x** at 256KB, **1.90x** at 1MB, and **2.01x** at 10MB
-  (note the log-scale axis above). The margin flattens as both engines approach the raw IO ceiling —
-  HaloDB is strongest for the large records it targets.
+* **Point reads** — HaloDB wins (read-amplification-1), ~1.2–1.6x.
+* **Writes** — RocksDB wins (LSM), ~3.6–4.4x.
+* **Prefix/range scans** — competitive across the board; HaloDB strongest at mid-to-large records. It
+  seeks to the prefix's subtree in the ordered index and reads each matched record via its point-read
+  path; RocksDB iterates its sorted keyspace. HaloDB is ~0.88x RocksDB at **1KB** but pulls ahead as
+  the per-record read becomes transfer-bound: **1.41x** at 16KB, **1.47x** at 256KB, peaking at
+  **2.09x** at 1MB, then narrowing to **~1.3x** at 10MB as both engines converge on the raw IO ceiling
+  (note the log-scale axis above; the 10MB point is the noisiest, ~11 blocks/pass).
 
 ### Reading the results — caveats
 
