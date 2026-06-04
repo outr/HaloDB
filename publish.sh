@@ -6,4 +6,4 @@ sbt clean
 sbt compile
 #sbt test
 sbt publishSigned
-sbt sonatypeBundleReleases
+sbt sonatypeBundleRelease

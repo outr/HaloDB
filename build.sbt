@@ -16,7 +16,7 @@ crossPaths := false
 autoScalaLibrary := false
 
 ThisBuild / organization := org
-ThisBuild / version := "0.5.7"
+ThisBuild / version := "0.6.0"
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 // HaloDB uses the Foreign Function & Memory API (java.lang.foreign), finalized in JDK 22.
@@ -58,8 +58,7 @@ testNG := {
 
 Test / test := testNG.value
 
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-ThisBuild / sonatypeRepository := "https://s01.oss.sonatype.org/service/local"
+ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
 ThisBuild / publishTo := sonatypePublishToBundle.value
 ThisBuild / sonatypeProfileName := org
 ThisBuild / licenses := Seq("MIT" -> url(s"https://github.com/$githubOrg/$projectName/blob/master/LICENSE"))
