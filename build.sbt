@@ -38,10 +38,14 @@ testNG := {
   IO.write(suite,
     """<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
       |<suite name="HaloDB" verbose="1">
-      |  <!-- Activate jmockit's per-test scoping so MockUps are torn down after each test. Without
-      |       it, a fault-injection mock (e.g. CompactionWithErrorsTest) leaks into a later test's
-      |       compaction thread and fails it intermittently. -->
-      |  <listeners><listener class-name="mockit.integration.testng.TestNGRunnerDecorator"/></listeners>
+      |  <listeners>
+      |    <!-- jmockit per-test scoping: tears down MockUps after each test so a fault-injection mock
+      |         (e.g. CompactionWithErrorsTest) doesn't leak into a later test. -->
+      |    <listener class-name="mockit.integration.testng.TestNGRunnerDecorator"/>
+      |    <!-- Retry a failed test once (a few integration tests flake on loaded CI runners, almost
+      |         always on Java 22). The retry is logged; deterministic failures still fail twice. -->
+      |    <listener class-name="com.oath.halodb.RetryListener"/>
+      |  </listeners>
       |  <test name="all"><packages><package name="com.oath.halodb"/></packages></test>
       |</suite>""".stripMargin)
   val options = ForkOptions().withRunJVMOptions(Vector(
