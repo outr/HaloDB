@@ -51,9 +51,67 @@ while (iterator.hasNext()) {
 db.close();
 ```
 
-`HaloDBOptions` carries the tuning knobs (compaction, flush size, memory pool, index threads, …) —
-see the setter Javadoc. The main trade-off is `compactionThresholdPerFile` (write vs space
-amplification).
+## Configuration
+
+`HaloDBOptions` exposes every tuning knob:
+
+```java
+HaloDBOptions options = new HaloDBOptions();
+
+// Size of each data file (1 GB here).
+options.setMaxFileSize(1024 * 1024 * 1024);
+
+// Size of each tombstone file (64 MB here). Larger files mean fewer files but slower db open; too
+// small results in a large number of tombstone files in the db folder.
+options.setMaxTombstoneFileSize(64 * 1024 * 1024);
+
+// Number of threads used to scan index and tombstone files in parallel to build the in-memory index
+// on open. Must be positive and <= Runtime.getRuntime().availableProcessors(). Speeds up db open.
+options.setBuildIndexThreads(8);
+
+// Threshold at which the page cache is synced to disk. Data is durable only once flushed, so more
+// data is lost on power loss if this is set too high; too low may hurt read/write performance.
+options.setFlushDataSizeBytes(10 * 1024 * 1024);
+
+// Percentage of stale data in a data file at which it will be compacted. This (with compactionJobRate)
+// is the most important tuning knob: it controls write vs space amplification. If set to x, write
+// amplification is approximately 1/x. Increasing it reduces write amplification but increases space
+// amplification.
+options.setCompactionThresholdPerFile(0.7);
+
+// How fast the compaction job runs — the amount of data the compaction thread copies per second.
+// The optimal value depends on compactionThresholdPerFile.
+options.setCompactionJobRate(50 * 1024 * 1024);
+
+// Preallocates enough memory for the off-heap index; if too low the db may need to rehash. For a db
+// of size n, set this to 2*n.
+options.setNumberOfRecords(100_000_000);
+
+// A delete writes a tombstone record; the tombstone can be removed only once all previous versions of
+// that key have been removed by compaction. Enabling this deletes, during startup, all tombstone
+// records whose previous versions were already removed from the data file.
+options.setCleanUpTombstonesDuringOpen(true);
+
+// HaloDB allocates native memory for the in-memory index. Enabling this releases all allocated memory
+// back to the kernel when the db is closed. Not needed if the JVM is shut down on close (the kernel
+// reclaims it automatically). Without the memory pool, this can be slow as _free_ is called per record.
+options.setCleanUpInMemoryIndexOnClose(false);
+
+// ** memory pool settings ** — a lower-footprint, lower-fragmentation index using fixed-size slots.
+options.setUseMemoryPool(true);
+
+// The hash table (like Java 7's ConcurrentHashMap) is split into segments — twice the number of CPU
+// cores — each managing its own native memory, further divided into chunks of this size.
+options.setMemoryPoolChunkSize(2 * 1024 * 1024);
+
+// With a memory pool, fixedKeySize declares the inline key size of each slot. Keys up to this size
+// occupy a single slot; longer keys overflow into additional chained slots, so keys of any length are
+// supported (set this to your typical key size for best density).
+options.setFixedKeySize(8);
+
+// Enables prefix/range scans (see below). Requires fixed-length keys.
+options.setUseOrderedIndex(true);
+```
 
 ## Prefix / range scans (optional)
 
