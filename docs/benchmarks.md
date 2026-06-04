@@ -15,9 +15,9 @@ writes, and prefix/range scans**.
 - 8-byte keys; values of **1KB** (small) and **16KB** (large) for the write/read comparison.
 - 2,000,000 records (1KB) / 300,000 records (16KB) — fits in page cache.
 - Reads are random (fixed seed) across all keys.
-- Prefix scans are swept across **1KB, 16KB, 256KB, and 1MB** values (record count chosen to keep
-  each dataset page-cache resident: 30,000 records at 256KB, 10,000 at 1MB) to show how the engines
-  diverge as records grow.
+- Prefix scans are swept across **1KB, 16KB, 256KB, 1MB, and 10MB** values (record count chosen to
+  keep each dataset page-cache resident: 30,000 records at 256KB, 10,000 at 1MB, 3,000 at 10MB) to
+  show how the engines diverge as records grow.
 - HaloDB runs with the ordered index enabled (`HaloDBOptions.setUseOrderedIndex(true)`) so prefix
   scans are available; RocksDB scans via a `RocksIterator` over its sorted keyspace. Prefix scans
   read ~256-key blocks, touching each matched value.
@@ -74,12 +74,16 @@ loses its edge:
 | 1KB   | 1,051,824 | 1,236,131 | 0.85× |
 | 16KB  | 265,794   | 209,773   | 1.27× |
 | 256KB | 32,905    | 21,629    | 1.52× |
-| 1MB   | 9,639     | 5,068     | **1.90×** |
+| 1MB   | 9,639     | 5,068     | 1.90× |
+| 10MB  | 847       | 421       | **2.01×** |
 
-So HaloDB starts slightly behind on tiny records and pulls steadily ahead as records grow — nearly
-**2× faster at 1MB**, the large-record workload it targets. The ordered index does not change
-point-read latency (the hash index is untouched); its cost is per-write maintenance and roughly 2×
-index memory, and it requires fixed-length keys.
+So HaloDB starts slightly behind on tiny records and pulls steadily ahead as records grow, finally
+crossing **2× at 10MB**. The curve is flattening — each size step adds less margin (0.85 → 1.27 →
+1.52 → 1.90 → 2.01) as the scan becomes fully transfer-bound and both engines converge on the raw IO
+ceiling, where HaloDB's one-seek-per-record is near-optimal. This is squarely the large-record
+workload HaloDB targets. The ordered index does not change point-read latency (the hash index is
+untouched); its cost is per-write maintenance and roughly 2× index memory, and it requires
+fixed-length keys.
 
 ## Why HaloDB makes these trade-offs
 

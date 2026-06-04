@@ -43,8 +43,9 @@ Reading the three dimensions:
 * **Prefix/range scans** — HaloDB's lead grows with record size. It seeks to the prefix's subtree in
   the ordered index and reads each matched record via its point-read path; RocksDB iterates its
   sorted keyspace. HaloDB is ~0.85x RocksDB at **1KB** but pulls ahead as the per-record read becomes
-  transfer-bound: **1.27x** at 16KB, **1.52x** at 256KB, and **1.90x** at 1MB (note the log-scale
-  axis above). Strongest for the large records it targets.
+  transfer-bound: **1.27x** at 16KB, **1.52x** at 256KB, **1.90x** at 1MB, and **2.01x** at 10MB
+  (note the log-scale axis above). The margin flattens as both engines approach the raw IO ceiling —
+  HaloDB is strongest for the large records it targets.
 
 ### Reading the results — caveats
 

@@ -146,9 +146,9 @@ CHARTS = {
         {"HaloDB": [326630, 71183], "RocksDB": [1540575, 222664]}, ""),
     "prefix-throughput.svg": chart(
         "Prefix-scan throughput (keys/sec, log scale) — higher is better",
-        ["1KB", "16KB", "256KB", "1MB"],
-        {"HaloDB": [1051824, 265794, 32905, 9639],
-         "RocksDB": [1236131, 209773, 21629, 5068]}, "", log=True),
+        ["1KB", "16KB", "256KB", "1MB", "10MB"],
+        {"HaloDB": [1051824, 265794, 32905, 9639, 847],
+         "RocksDB": [1236131, 209773, 21629, 5068, 421]}, "", log=True),
 }
 
 if __name__ == "__main__":
