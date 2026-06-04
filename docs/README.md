@@ -30,29 +30,25 @@ restricted-method warning.
 
 ## Usage
 
-Keys and values are `byte[]`. Examples are Scala (compile-checked via
-[mdoc](https://scalameta.org/mdoc/)); the API is identical from any JVM language.
+Keys and values are `byte[]`:
 
-```scala mdoc:compile-only
-import com.oath.halodb.{HaloDB, HaloDBOptions, Record}
-import java.io.File
+```java
+HaloDBOptions options = new HaloDBOptions();
+options.setMaxFileSize(1024 * 1024 * 1024);       // 1 GB data files
+options.setCompactionThresholdPerFile(0.5);       // compact at 50% stale (write amplification ≈ 2)
 
-val options = new HaloDBOptions()
-options.setMaxFileSize(1024 * 1024 * 1024)      // 1 GB data files
-options.setCompactionThresholdPerFile(0.5)      // compact at 50% stale (write amplification ≈ 2)
+HaloDB db = HaloDB.open(new File("/tmp/halodb"), options); // created/reopened; index rebuilt from disk
 
-val db = HaloDB.open(new File("/tmp/halodb"), options) // created/reopened; index rebuilt from disk
+db.put("hello".getBytes(), "world".getBytes());
+byte[] value = db.get("hello".getBytes());        // "world"
+db.delete("hello".getBytes());
 
-db.put("hello".getBytes, "world".getBytes)
-val value: Array[Byte] = db.get("hello".getBytes)      // "world"
-db.delete("hello".getBytes)
-
-val iterator = db.newIterator()                        // iterate all records (unordered)
-while (iterator.hasNext) {
-  val record: Record = iterator.next()                 // record.getKey / record.getValue
+HaloDBIterator iterator = db.newIterator();        // iterate all records (unordered)
+while (iterator.hasNext()) {
+    Record record = iterator.next();               // record.getKey() / record.getValue()
 }
 
-db.close()
+db.close();
 ```
 
 `HaloDBOptions` carries the tuning knobs (compaction, flush size, memory pool, index threads, …) —
@@ -65,17 +61,14 @@ Enabling the ordered index keeps an off-heap
 [adaptive radix tree](https://db.in.tum.de/~leis/papers/ART.pdf) alongside the hash index, adding
 ascending prefix scans. It needs **fixed-length keys** and leaves point-read latency unchanged.
 
-```scala mdoc:compile-only
-import com.oath.halodb.{HaloDB, HaloDBOptions}
-import java.io.File
+```java
+HaloDBOptions options = new HaloDBOptions();
+options.setUseOrderedIndex(true);
+options.setFixedKeySize(8);
 
-val options = new HaloDBOptions()
-options.setUseOrderedIndex(true)
-options.setFixedKeySize(8)
-
-val db = HaloDB.open(new File("/tmp/halodb-ordered"), options)
-val matches = db.prefixScan("user:001".getBytes) // java.util.Iterator[Record], ascending key order
-db.close()
+HaloDB db = HaloDB.open(new File("/tmp/halodb-ordered"), options);
+Iterator<Record> matches = db.prefixScan("user:001".getBytes()); // ascending key order
+db.close();
 ```
 
 ## Notes
