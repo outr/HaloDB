@@ -176,11 +176,16 @@ class HaloDBFile {
         logger.info("Recovered {} records from file {} with size {}. Size after repair {}.", count, getName(), getSize(), repairFile.getSize());
         repairFile.flushToDisk();
         repairFile.indexFile.flushToDisk();
+        // Close the files before renaming over them: on Windows, Files.move fails with a
+        // FileSystemException if either path is held open by any process (including this one).
+        // Closing first is harmless on POSIX, where the move would have succeeded regardless.
+        indexFile.close();
+        repairFile.indexFile.close();
         Files.move(repairFile.indexFile.getPath(), indexFile.getPath(), REPLACE_EXISTING, ATOMIC_MOVE);
-        Files.move(repairFile.getPath(), getPath(), REPLACE_EXISTING, ATOMIC_MOVE);
-        dbDirectory.syncMetaData();
         repairFile.close();
         close();
+        Files.move(repairFile.getPath(), getPath(), REPLACE_EXISTING, ATOMIC_MOVE);
+        dbDirectory.syncMetaData();
         return openForReading(dbDirectory, getPath().toFile(), fileType, options);
     }
 
