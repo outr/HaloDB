@@ -83,7 +83,7 @@ ThisBuild / resolvers += Resolver.mavenLocal
 ThisBuild / outputStrategy := Some(StdoutOutput)
 
 libraryDependencies ++= Seq(
-  "org.slf4j" % "slf4j-api" % "1.7.36",
+  "org.slf4j" % "slf4j-api" % "2.0.18",
   "com.google.guava" % "guava" % "33.6.0-jre",
   "net.jpountz.lz4" % "lz4" % "1.3",
   "org.hamcrest" % "hamcrest-all" % "1.3" % Test,
