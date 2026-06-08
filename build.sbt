@@ -111,7 +111,7 @@ lazy val benchmarks = (project in file("benchmarks"))
     libraryDependencies ++= Seq(
       "org.rocksdb" % "rocksdbjni" % "10.10.1",
       "org.hdrhistogram" % "HdrHistogram" % "2.1.12",
-      "org.slf4j" % "slf4j-simple" % "1.7.12"
+      "org.slf4j" % "slf4j-simple" % "1.7.36"
     )
   )
 
