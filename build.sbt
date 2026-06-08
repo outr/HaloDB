@@ -110,7 +110,7 @@ lazy val benchmarks = (project in file("benchmarks"))
     javaOptions ++= Seq("--enable-native-access=ALL-UNNAMED", "-Xmx4g"),
     libraryDependencies ++= Seq(
       "org.rocksdb" % "rocksdbjni" % "10.10.1",
-      "org.hdrhistogram" % "HdrHistogram" % "2.1.12",
+      "org.hdrhistogram" % "HdrHistogram" % "2.2.2",
       "org.slf4j" % "slf4j-simple" % "1.7.12"
     )
   )
