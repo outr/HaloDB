@@ -122,7 +122,7 @@ lazy val docs = (project in file("project-docs"))
   .dependsOn(LocalRootProject)
   .enablePlugins(MdocPlugin)
   .settings(
-    scalaVersion := "3.8.3",
+    scalaVersion := "3.8.4",
     publish / skip := true,
     mdocVariables := Map("VERSION" -> version.value),
     mdocIn := (LocalRootProject / baseDirectory).value / "docs" / "README.md",
