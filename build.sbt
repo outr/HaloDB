@@ -87,8 +87,8 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "33.6.0-jre",
   "net.jpountz.lz4" % "lz4" % "1.3",
   "org.hamcrest" % "hamcrest-all" % "1.3" % Test,
-  "org.apache.logging.log4j" % "log4j-core" % "2.26.0" % Test,
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.26.0" % Test,
+  "org.apache.logging.log4j" % "log4j-core" % "2.26.1" % Test,
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.26.1" % Test,
   "org.testng" % "testng" % "6.9.10" % Test,
   "org.jmockit" % "jmockit" % "1.49" % Test,
   "org.assertj" % "assertj-core" % "3.27.7" % Test
